@@ -1,9 +1,29 @@
 <div class="app-container">
   <header>
-    <h1>{{ title }}</h1>
-    <p class="subtitle">Markdown reader & converter</p>
+    <div class="header-left">
+      <h1>{{ title }}</h1>
+      <p class="subtitle">Markdown reader & converter</p>
+    </div>
+    <button class="btn-open" (click)="openFile()" [disabled]="loading()">
+      @if (loading()) {
+        Opening…
+      } @else {
+        &#128193; Open .md file
+      }
+    </button>
   </header>
+
+  @if (fileName(); as name) {
+    <div class="file-info">&#128196; {{ name }}</div>
+  }
+
   <main>
-    <router-outlet />
+    @if (content(); as html) {
+      <div class="markdown-body" [innerHTML]="html"></div>
+    } @else {
+      <div class="empty-state">
+        <p>Open a Markdown file to preview it</p>
+      </div>
+    }
   </main>
 </div>

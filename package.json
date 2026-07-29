@@ -10,7 +10,9 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:android": "tauri android init",
+    "tauri:android": "tauri android dev",
+    "tauri:android:build": "tauri android build --apk",
+    "tauri:android:bundle": "tauri android build --aab --release",
     "tauri:ios": "tauri ios init"
   },
   "private": true,
@@ -23,6 +25,8 @@
     "@angular/platform-browser": "^22.0.0",
     "@angular/router": "^22.0.0",
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "marked": "^18.0.7",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
