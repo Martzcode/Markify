@@ -1,7 +1,7 @@
 [package]
 name = "markify"
 version = "0.1.0"
-description = "Markdown reader and conversion tool - multi-platform (Linux, Windows, Android)"
+description = "Markdown reader and conversion tool - Linux (Debian, Fedora) and Windows"
 authors = ["martz"]
 license = "MIT"
 repository = ""
@@ -12,7 +12,6 @@ rust-version = "1.77.2"
 
 [lib]
 name = "markify_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2.6.3", features = [] }

@@ -41,11 +41,7 @@
       },
       "rpm": {
         "depends": []
-      },
-      "appimage": {}
-    },
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
+      }
     }
   }
 }

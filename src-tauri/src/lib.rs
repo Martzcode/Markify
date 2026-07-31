@@ -344,7 +344,6 @@ fn get_language(app: AppHandle) -> String {
     language_from_settings(&app)
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
