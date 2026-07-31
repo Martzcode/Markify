@@ -19,11 +19,30 @@
 
   <main>
     @if (content(); as html) {
-      <div class="markdown-body" [innerHTML]="html"></div>
+      <div
+        class="markdown-body"
+        [innerHTML]="html"
+        (contextmenu)="onContextMenu($event)"
+        (touchstart)="onTouchStart($event)"
+        (touchend)="onTouchEnd()"
+        (touchmove)="onTouchMove()"
+        (touchcancel)="onTouchCancel()"
+      ></div>
     } @else {
       <div class="empty-state">
         <p>Open a Markdown file to preview it</p>
       </div>
     }
   </main>
+
+  @if (menuVisible()) {
+    <div
+      class="context-menu-backdrop"
+      (click)="onBackdropClick()"
+      (contextmenu)="closeMenu()"
+    ></div>
+    <div class="context-menu" [style.left.px]="menuX()" [style.top.px]="menuY()">
+      <button type="button" (click)="convertToPdf()">Convertir en PDF</button>
+    </div>
+  }
 </div>
