@@ -1,18 +1,4 @@
 <div class="app-container">
-  <header>
-    <div class="header-left">
-      <h1>{{ title }}</h1>
-      <p class="subtitle">Markdown reader & converter</p>
-    </div>
-    <button class="btn-open" (click)="openFile()" [disabled]="loading()">
-      @if (loading()) {
-        Opening…
-      } @else {
-        &#128193; Open .md file
-      }
-    </button>
-  </header>
-
   @if (fileName(); as name) {
     <div class="file-info">&#128196; {{ name }}</div>
   }
@@ -30,7 +16,7 @@
       ></div>
     } @else {
       <div class="empty-state">
-        <p>Open a Markdown file to preview it</p>
+        <p>{{ t('empty_state') }}</p>
       </div>
     }
   </main>
@@ -42,7 +28,7 @@
       (contextmenu)="closeMenu()"
     ></div>
     <div class="context-menu" [style.left.px]="menuX()" [style.top.px]="menuY()">
-      <button type="button" (click)="convertToPdf()">Convertir en PDF</button>
+      <button type="button" (click)="convertToPdf()">{{ t('convert_pdf') }}</button>
     </div>
   }
 </div>

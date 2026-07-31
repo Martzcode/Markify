@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { listen } from '@tauri-apps/api/event';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
+import { I18nService } from './i18n';
 
 @Component({
   selector: 'app-root',
@@ -9,39 +11,43 @@ import { marked } from 'marked';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  readonly title = 'Markify';
+export class App implements OnInit {
   readonly content = signal('');
   readonly fileName = signal('');
-  readonly loading = signal(false);
 
   readonly menuVisible = signal(false);
   readonly menuX = signal(0);
   readonly menuY = signal(0);
 
+  private readonly i18n = inject(I18nService);
+  readonly t = (key: string) => this.i18n.t(key);
+
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private longPressStart = { x: 0, y: 0 };
   private menuOpenedAt = 0;
 
+  ngOnInit() {
+    void this.i18n.init().catch(() => undefined);
+    void listen('menu-open', () => this.openFile()).catch(() => undefined);
+    void listen('menu-export', () => this.convertToPdf()).catch(() => undefined);
+  }
+
   async openFile() {
     this.closeMenu();
-    this.loading.set(true);
     try {
       const path = await open({
         multiple: false,
         filters: [{ name: 'Markdown', extensions: ['md'] }],
       });
       if (!path) {
-        this.loading.set(false);
         return;
       }
       const raw = await invoke<string>('read_file_content', { path });
       this.fileName.set(path.split('/').pop() ?? path.split('\\').pop() ?? path);
       this.content.set(await marked.parse(raw));
     } catch (e) {
-      this.content.set(`**Error:** ${e}`);
+      this.content.set(`**${this.t('error_prefix')}:** ${e}`);
     }
-    this.loading.set(false);
   }
 
   onContextMenu(event: MouseEvent) {
@@ -122,7 +128,7 @@ export class App {
         data: Array.from(new Uint8Array(await blob.arrayBuffer())),
       });
     } catch (e) {
-      alert(`Erreur lors de la conversion : ${e}`);
+      alert(`${this.t('conversion_error')}: ${e}`);
     }
   }
 
