@@ -11,10 +11,12 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { I18nService } from '../../i18n/i18n.service';
 import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 import { DocumentService } from '../../services/document.service';
+import { EditorRefService } from '../../services/editor-ref.service';
 
 export interface TitleBarMenuItem {
   label: string;
   checked?: boolean;
+  disabled?: boolean;
   action?: () => void;
   submenu?: TitleBarMenu;
 }
@@ -34,6 +36,7 @@ export class TitleBar implements OnDestroy {
   private readonly element = inject(ElementRef<HTMLElement>);
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
+  private readonly editorRef = inject(EditorRefService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -62,11 +65,31 @@ export class TitleBar implements OnDestroy {
     {
       label: this.i18n.t('menu.edit'),
       items: [
-        { label: this.i18n.t('menu.edit.undo') },
-        { label: this.i18n.t('menu.edit.redo') },
-        { label: this.i18n.t('menu.edit.cut') },
-        { label: this.i18n.t('menu.edit.copy') },
-        { label: this.i18n.t('menu.edit.paste') },
+        {
+          label: this.i18n.t('menu.edit.undo'),
+          disabled: !this.document.canUndo(),
+          action: () => this.document.undo(),
+        },
+        {
+          label: this.i18n.t('menu.edit.redo'),
+          disabled: !this.document.canRedo(),
+          action: () => this.document.redo(),
+        },
+        {
+          label: this.i18n.t('menu.edit.cut'),
+          disabled: !this.editorRef.textarea(),
+          action: () => this.document.cutSelection(),
+        },
+        {
+          label: this.i18n.t('menu.edit.copy'),
+          disabled: !this.editorRef.textarea(),
+          action: () => this.document.copySelection(),
+        },
+        {
+          label: this.i18n.t('menu.edit.paste'),
+          disabled: !this.editorRef.textarea(),
+          action: () => this.document.pasteFromClipboard(),
+        },
       ],
     },
     {
@@ -156,7 +179,9 @@ export class TitleBar implements OnDestroy {
   protected runItem(item: TitleBarMenuItem): void {
     this.openMenu.set(null);
     this.openSubmenu.set(null);
-    item.action?.();
+    if (!item.disabled) {
+      item.action?.();
+    }
   }
 
   private async toggleFullScreen(): Promise<void> {

@@ -4,6 +4,7 @@
   }
   @if (document.mode() === 'edit' || document.mode() === 'hybrid') {
     <textarea
+      #input
       class="editor-input"
       [value]="document.content()"
       (input)="onInput($event)"

@@ -103,6 +103,15 @@
   color: #ffffff;
 }
 
+.menu-item:disabled {
+  color: #6e6e6e;
+}
+
+.menu-item:disabled:hover {
+  background: none;
+  color: #6e6e6e;
+}
+
 .menu-check {
   display: inline-flex;
   align-items: center;

@@ -1,15 +1,20 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { I18nService } from '../i18n/i18n.service';
+import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
 
 export type EditorMode = 'read' | 'edit' | 'hybrid';
+
+const HISTORY_GROUP_MS = 500;
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly i18n = inject(I18nService);
   private readonly toast = inject(ToastService);
+  private readonly editorRef = inject(EditorRefService);
 
   readonly content = signal('');
   readonly filePath = signal<string | null>(null);
@@ -18,6 +23,13 @@ export class DocumentService {
   readonly isDirty = signal(false);
   readonly error = signal<string | null>(null);
 
+  private readonly undoStack = signal<string[]>([]);
+  private readonly redoStack = signal<string[]>([]);
+  private lastEditAt: number | null = null;
+
+  readonly canUndo = computed(() => this.undoStack().length > 0);
+  readonly canRedo = computed(() => this.redoStack().length > 0);
+
   newFile(): void {
     this.error.set(null);
     this.content.set('');
@@ -25,6 +37,7 @@ export class DocumentService {
     this.isOpen.set(true);
     this.isDirty.set(false);
     this.mode.set('edit');
+    this.resetHistory();
   }
 
   async openFile(): Promise<void> {
@@ -44,6 +57,7 @@ export class DocumentService {
       this.isOpen.set(true);
       this.isDirty.set(false);
       this.mode.set('read');
+      this.resetHistory();
     } catch (err) {
       this.error.set(String(err));
     }
@@ -76,8 +90,113 @@ export class DocumentService {
   }
 
   setContent(content: string): void {
+    const previous = this.content();
+    if (previous === content) {
+      return;
+    }
+    this.commitHistory(previous);
     this.content.set(content);
     this.isDirty.set(true);
+  }
+
+  undo(): void {
+    const stack = this.undoStack();
+    const previous = stack[stack.length - 1];
+    if (previous === undefined) {
+      return;
+    }
+    this.undoStack.set(stack.slice(0, -1));
+    this.redoStack.update((redo) => [...redo, this.content()]);
+    this.content.set(previous);
+    this.isDirty.set(true);
+  }
+
+  redo(): void {
+    const stack = this.redoStack();
+    const next = stack[stack.length - 1];
+    if (next === undefined) {
+      return;
+    }
+    this.redoStack.set(stack.slice(0, -1));
+    this.undoStack.update((undo) => [...undo, this.content()]);
+    this.content.set(next);
+    this.isDirty.set(true);
+  }
+
+  async copySelection(): Promise<void> {
+    const textarea = this.editorRef.textarea();
+    if (!textarea) {
+      return;
+    }
+    const { selectionStart: start, selectionEnd: end } = textarea;
+    if (start === end) {
+      return;
+    }
+    await writeText(textarea.value.substring(start, end));
+  }
+
+  async cutSelection(): Promise<void> {
+    const textarea = this.editorRef.textarea();
+    if (!textarea) {
+      return;
+    }
+    const { selectionStart: start, selectionEnd: end } = textarea;
+    if (start === end) {
+      return;
+    }
+    await writeText(textarea.value.substring(start, end));
+    this.setContent(this.content().slice(0, start) + this.content().slice(end));
+    this.restoreSelection(textarea, start, start);
+  }
+
+  async pasteFromClipboard(): Promise<void> {
+    const textarea = this.editorRef.textarea();
+    if (!textarea) {
+      return;
+    }
+    const { selectionStart: start, selectionEnd: end } = textarea;
+    const text = await readText();
+    this.setContent(this.content().slice(0, start) + text + this.content().slice(end));
+    this.restoreSelection(textarea, start + text.length, start + text.length);
+  }
+
+  private commitHistory(previous: string): void {
+    const now = Date.now();
+    if (this.lastEditAt !== null && now - this.lastEditAt < HISTORY_GROUP_MS) {
+      this.undoStack.update((stack) => {
+        const next = [...stack];
+        if (next.length > 0) {
+          next[next.length - 1] = previous;
+        } else {
+          next.push(previous);
+        }
+        return next;
+      });
+    } else {
+      this.undoStack.update((stack) => [...stack, previous]);
+    }
+    this.lastEditAt = now;
+    this.redoStack.set([]);
+  }
+
+  private resetHistory(): void {
+    this.undoStack.set([]);
+    this.redoStack.set([]);
+    this.lastEditAt = null;
+  }
+
+  private restoreSelection(
+    textarea: HTMLTextAreaElement,
+    start: number,
+    end: number,
+  ): void {
+    setTimeout(() => {
+      try {
+        textarea.setSelectionRange(start, end);
+      } catch {
+        // selection restore is best-effort
+      }
+    });
   }
 
   setMode(mode: EditorMode): void {

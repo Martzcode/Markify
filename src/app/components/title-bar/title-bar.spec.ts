@@ -23,4 +23,14 @@ describe('TitleBar', () => {
     expect(submenu.items[1].checked).toBe(false);
     expect(submenu.items[2].checked).toBe(false);
   });
+
+  it('disables edit actions when there is nothing to undo or edit', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const editMenu = menus[1];
+    expect(editMenu.items[0].disabled).toBe(true);
+    expect(editMenu.items[1].disabled).toBe(true);
+    expect(editMenu.items[2].disabled).toBe(true);
+    expect(editMenu.items[3].disabled).toBe(true);
+    expect(editMenu.items[4].disabled).toBe(true);
+  });
 });

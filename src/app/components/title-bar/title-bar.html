@@ -39,6 +39,7 @@
                           <button
                             type="button"
                             class="menu-item"
+                            [disabled]="subItem.disabled"
                             (click)="runItem(subItem)"
                           >
                             <span class="menu-check">
@@ -56,6 +57,7 @@
                   <button
                     type="button"
                     class="menu-item"
+                    [disabled]="item.disabled"
                     (click)="runItem(item)"
                   >
                     <span class="menu-check">

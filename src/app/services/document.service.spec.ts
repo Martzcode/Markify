@@ -1,18 +1,22 @@
 import { TestBed } from '@angular/core/testing';
 import { invoke } from '@tauri-apps/api/core';
+import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { vi } from 'vitest';
 import { DocumentService } from './document.service';
+import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
 
 describe('DocumentService', () => {
   let service: DocumentService;
   let toast: ToastService;
+  let editorRef: EditorRefService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = TestBed.inject(DocumentService);
     toast = TestBed.inject(ToastService);
+    editorRef = TestBed.inject(EditorRefService);
   });
 
   it('opens a markdown file and switches to read mode', async () => {
@@ -147,4 +151,76 @@ describe('DocumentService', () => {
     expect(service.content()).toBe('new content');
     expect(service.isDirty()).toBe(true);
   });
+
+  it('undoes and redoes grouped edits', () => {
+    service.setContent('a');
+    service.setContent('ab');
+    service.setContent('abc');
+
+    service.undo();
+    expect(service.content()).toBe('ab');
+
+    service.undo();
+    expect(service.content()).toBe('ab');
+
+    service.redo();
+    expect(service.content()).toBe('abc');
+    expect(service.canRedo()).toBe(false);
+  });
+
+  it('keeps separate history entries for separate edits', () => {
+    vi.useFakeTimers();
+    service.setContent('a');
+    vi.advanceTimersByTime(1000);
+    service.setContent('ab');
+    vi.advanceTimersByTime(1000);
+    service.setContent('abc');
+
+    service.undo();
+    expect(service.content()).toBe('ab');
+    service.undo();
+    expect(service.content()).toBe('a');
+    service.undo();
+    expect(service.content()).toBe('');
+    vi.useRealTimers();
+  });
+
+  it('copies the selection to the clipboard', async () => {
+    vi.mocked(writeText).mockResolvedValue();
+    service.setContent('hello world');
+    editorRef.textarea.set(makeTextarea('hello world', 6, 11));
+
+    await service.copySelection();
+
+    expect(writeText).toHaveBeenCalledWith('world');
+  });
+
+  it('cuts the selection and removes it from the content', async () => {
+    vi.mocked(writeText).mockResolvedValue();
+    service.setContent('hello world');
+    editorRef.textarea.set(makeTextarea('hello world', 6, 11));
+
+    await service.cutSelection();
+
+    expect(writeText).toHaveBeenCalledWith('world');
+    expect(service.content()).toBe('hello ');
+  });
+
+  it('pastes the clipboard content at the cursor', async () => {
+    vi.mocked(readText).mockResolvedValue('markdown');
+    service.setContent('hello ');
+    editorRef.textarea.set(makeTextarea('hello ', 6, 6));
+
+    await service.pasteFromClipboard();
+
+    expect(service.content()).toBe('hello markdown');
+  });
 });
+
+function makeTextarea(value: string, start: number, end: number): HTMLTextAreaElement {
+  const el = document.createElement('textarea');
+  el.value = value;
+  el.selectionStart = start;
+  el.selectionEnd = end;
+  return el;
+}
