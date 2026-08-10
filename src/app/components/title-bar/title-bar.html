@@ -1,0 +1,101 @@
+<header class="titlebar">
+  <div
+    class="titlebar-left"
+    data-tauri-drag-region
+    (dblclick)="onToggleMaximize()"
+  >
+    <img
+      src="app-icon.png"
+      alt="Markify"
+      class="app-icon"
+      draggable="false"
+      data-tauri-drag-region
+    />
+    <span class="app-title" data-tauri-drag-region>Markify</span>
+    <nav class="menu-bar" (dblclick)="$event.stopPropagation()">
+      @for (menu of menus; track menu.label) {
+        <div
+          class="menu"
+          [class.open]="openMenu() === menu.label"
+          (click)="toggleMenu(menu.label)"
+          (mouseenter)="hoverMenu(menu.label)"
+        >
+          <button type="button" class="menu-label">{{ menu.label }}</button>
+          @if (openMenu() === menu.label) {
+            <div class="menu-dropdown">
+              @for (item of menu.items; track item.label) {
+                <button
+                  type="button"
+                  class="menu-item"
+                  (click)="runItem(item)"
+                >
+                  {{ item.label }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+  </div>
+  <div class="titlebar-right">
+    <button
+      type="button"
+      class="win-btn"
+      title="Minimize"
+      (click)="onMinimize()"
+    >
+      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+        <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="win-btn"
+      [attr.title]="isMaximized() ? 'Restore' : 'Maximize'"
+      (click)="onToggleMaximize()"
+    >
+      @if (isMaximized()) {
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect
+            x="0.5"
+            y="2.5"
+            width="7"
+            height="7"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+          />
+          <path
+            d="M2.5 2.5v-2h7v7h-2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+          />
+        </svg>
+      } @else {
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect
+            x="0.5"
+            y="0.5"
+            width="9"
+            height="9"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+          />
+        </svg>
+      }
+    </button>
+    <button
+      type="button"
+      class="win-btn win-close"
+      title="Close"
+      (click)="onClose()"
+    >
+      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.1" />
+      </svg>
+    </button>
+  </div>
+</header>
