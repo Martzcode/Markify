@@ -91,6 +91,11 @@ export class TitleBar implements OnDestroy {
                 checked: this.document.mode() === 'edit',
                 action: () => this.document.setMode('edit'),
               },
+              {
+                label: this.i18n.t('menu.view.hybridMode'),
+                checked: this.document.mode() === 'hybrid',
+                action: () => this.document.setMode('hybrid'),
+              },
             ],
           },
         },

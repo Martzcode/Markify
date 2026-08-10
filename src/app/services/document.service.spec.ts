@@ -128,12 +128,18 @@ describe('DocumentService', () => {
     expect(toast.message()).toBeNull();
   });
 
-  it('toggles between read and edit mode', () => {
+  it('cycles through the editor modes', () => {
     service.setMode('edit');
     expect(service.mode()).toBe('edit');
 
     service.toggleMode();
+    expect(service.mode()).toBe('hybrid');
+
+    service.toggleMode();
     expect(service.mode()).toBe('read');
+
+    service.toggleMode();
+    expect(service.mode()).toBe('edit');
   });
 
   it('marks the content as dirty when edited', () => {

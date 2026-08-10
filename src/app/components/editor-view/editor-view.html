@@ -1,15 +1,16 @@
-<div class="editor">
+<div class="editor" [class.editor-split]="document.mode() === 'hybrid'">
   @if (document.error(); as error) {
     <div class="editor-error">{{ error }}</div>
   }
-  @if (document.mode() === 'edit') {
+  @if (document.mode() === 'edit' || document.mode() === 'hybrid') {
     <textarea
       class="editor-input"
       [value]="document.content()"
       (input)="onInput($event)"
       spellcheck="false"
     ></textarea>
-  } @else {
+  }
+  @if (document.mode() === 'read' || document.mode() === 'hybrid') {
     <div class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>
   }
 </div>

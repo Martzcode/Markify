@@ -4,7 +4,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { I18nService } from '../i18n/i18n.service';
 import { ToastService } from './toast.service';
 
-export type EditorMode = 'read' | 'edit';
+export type EditorMode = 'read' | 'edit' | 'hybrid';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
@@ -85,6 +85,8 @@ export class DocumentService {
   }
 
   toggleMode(): void {
-    this.mode.set(this.mode() === 'read' ? 'edit' : 'read');
+    const order: EditorMode[] = ['read', 'edit', 'hybrid'];
+    const index = order.indexOf(this.mode());
+    this.mode.set(order[(index + 1) % order.length]);
   }
 }
