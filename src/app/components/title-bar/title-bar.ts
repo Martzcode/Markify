@@ -10,6 +10,7 @@ import {
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { I18nService } from '../../i18n/i18n.service';
 import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
+import { DocumentService } from '../../services/document.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -31,6 +32,7 @@ export class TitleBar implements OnDestroy {
   private readonly win = getCurrentWindow();
   private readonly element = inject(ElementRef<HTMLElement>);
   protected readonly i18n = inject(I18nService);
+  protected readonly document = inject(DocumentService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -41,7 +43,10 @@ export class TitleBar implements OnDestroy {
       label: this.i18n.t('menu.file'),
       items: [
         { label: this.i18n.t('menu.file.new') },
-        { label: this.i18n.t('menu.file.open') },
+        {
+          label: this.i18n.t('menu.file.open'),
+          action: () => this.document.openFile(),
+        },
         { label: this.i18n.t('menu.file.save') },
         { label: this.i18n.t('menu.file.exit'), action: () => this.win.close() },
       ],
@@ -62,6 +67,16 @@ export class TitleBar implements OnDestroy {
         {
           label: this.i18n.t('menu.view.fullscreen'),
           action: () => this.toggleFullScreen(),
+        },
+        {
+          label: this.i18n.t('menu.view.readMode'),
+          checked: this.document.mode() === 'read',
+          action: () => this.document.setMode('read'),
+        },
+        {
+          label: this.i18n.t('menu.view.editMode'),
+          checked: this.document.mode() === 'edit',
+          action: () => this.document.setMode('edit'),
         },
       ],
     },

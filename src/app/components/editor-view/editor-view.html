@@ -1,0 +1,15 @@
+<div class="editor">
+  @if (document.error(); as error) {
+    <div class="editor-error">{{ error }}</div>
+  }
+  @if (document.mode() === 'edit') {
+    <textarea
+      class="editor-input"
+      [value]="document.content()"
+      (input)="onInput($event)"
+      spellcheck="false"
+    ></textarea>
+  } @else {
+    <div class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>
+  }
+</div>

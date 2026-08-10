@@ -20,10 +20,17 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.welcome {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  overflow: auto;
   text-align: center;
 }
 
@@ -32,9 +39,10 @@ h1 {
   font-weight: 500;
   letter-spacing: -0.125rem;
   margin: 0;
+  color: #ffffff;
 }
 
 p {
   margin: 0;
-  color: #4f4f4f;
+  color: #9e9e9e;
 }
