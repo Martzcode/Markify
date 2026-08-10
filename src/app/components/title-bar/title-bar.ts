@@ -1,8 +1,19 @@
-import { Component, ElementRef, HostListener, OnDestroy, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { I18nService } from '../../i18n/i18n.service';
+import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 
 export interface TitleBarMenuItem {
   label: string;
+  checked?: boolean;
   action?: () => void;
 }
 
@@ -19,42 +30,54 @@ export interface TitleBarMenu {
 export class TitleBar implements OnDestroy {
   private readonly win = getCurrentWindow();
   private readonly element = inject(ElementRef<HTMLElement>);
+  protected readonly i18n = inject(I18nService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
   protected readonly openMenu = signal<string | null>(null);
 
-  protected readonly menus: TitleBarMenu[] = [
+  protected readonly menus = computed<TitleBarMenu[]>(() => [
     {
-      label: 'File',
+      label: this.i18n.t('menu.file'),
       items: [
-        { label: 'New File' },
-        { label: 'Open…' },
-        { label: 'Save' },
-        { label: 'Exit', action: () => this.win.close() },
+        { label: this.i18n.t('menu.file.new') },
+        { label: this.i18n.t('menu.file.open') },
+        { label: this.i18n.t('menu.file.save') },
+        { label: this.i18n.t('menu.file.exit'), action: () => this.win.close() },
       ],
     },
     {
-      label: 'Edit',
+      label: this.i18n.t('menu.edit'),
       items: [
-        { label: 'Undo' },
-        { label: 'Redo' },
-        { label: 'Cut' },
-        { label: 'Copy' },
-        { label: 'Paste' },
+        { label: this.i18n.t('menu.edit.undo') },
+        { label: this.i18n.t('menu.edit.redo') },
+        { label: this.i18n.t('menu.edit.cut') },
+        { label: this.i18n.t('menu.edit.copy') },
+        { label: this.i18n.t('menu.edit.paste') },
       ],
     },
     {
-      label: 'View',
+      label: this.i18n.t('menu.view'),
       items: [
-        { label: 'Toggle Full Screen', action: () => this.toggleFullScreen() },
+        {
+          label: this.i18n.t('menu.view.fullscreen'),
+          action: () => this.toggleFullScreen(),
+        },
       ],
     },
     {
-      label: 'Help',
-      items: [{ label: 'About Markify' }],
+      label: this.i18n.t('menu.language'),
+      items: SUPPORTED_LANGS.map((lang) => ({
+        label: LANG_NAMES[lang],
+        checked: this.i18n.currentLang() === lang,
+        action: () => this.i18n.setLang(lang),
+      })),
     },
-  ];
+    {
+      label: this.i18n.t('menu.help'),
+      items: [{ label: this.i18n.t('menu.help.about') }],
+    },
+  ]);
 
   constructor() {
     this.win.isMaximized().then((value) => this.isMaximized.set(value));

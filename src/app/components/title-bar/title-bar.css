@@ -84,6 +84,9 @@
 }
 
 .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   background: none;
   border: none;
@@ -98,6 +101,14 @@
 .menu-item:hover {
   background: #094771;
   color: #ffffff;
+}
+
+.menu-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
 }
 
 .titlebar-right {

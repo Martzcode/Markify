@@ -13,7 +13,7 @@
     />
     <span class="app-title" data-tauri-drag-region>Markify</span>
     <nav class="menu-bar" (dblclick)="$event.stopPropagation()">
-      @for (menu of menus; track menu.label) {
+      @for (menu of menus(); track menu.label) {
         <div
           class="menu"
           [class.open]="openMenu() === menu.label"
@@ -29,6 +29,11 @@
                   class="menu-item"
                   (click)="runItem(item)"
                 >
+                  <span class="menu-check">
+                    @if (item.checked) {
+                      <span>✓</span>
+                    }
+                  </span>
                   {{ item.label }}
                 </button>
               }

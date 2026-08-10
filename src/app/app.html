@@ -2,7 +2,7 @@
   <app-title-bar />
   <main class="app-content">
     <router-outlet />
-    <h1>Hello, {{ title() }}</h1>
-    <p>Your markdown editor is ready. 🚀</p>
+    <h1>{{ i18n.t('welcome.hello') }}</h1>
+    <p>{{ i18n.t('welcome.subtitle') }}</p>
   </main>
 </div>
