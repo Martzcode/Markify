@@ -111,6 +111,35 @@
   flex-shrink: 0;
 }
 
+.menu-item-text {
+  flex: 1;
+}
+
+.menu-arrow {
+  font-size: 10px;
+  color: #9e9e9e;
+}
+
+.menu-item-submenu {
+  position: relative;
+}
+
+.menu-item-submenu:hover,
+.menu-item-submenu.open {
+  background: #094771;
+  color: #ffffff;
+}
+
+.menu-item-submenu:hover .menu-arrow,
+.menu-item-submenu.open .menu-arrow {
+  color: #ffffff;
+}
+
+.menu-dropdown-sub {
+  top: -5px;
+  left: 100%;
+}
+
 .titlebar-right {
   display: flex;
   align-items: stretch;

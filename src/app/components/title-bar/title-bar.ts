@@ -16,6 +16,7 @@ export interface TitleBarMenuItem {
   label: string;
   checked?: boolean;
   action?: () => void;
+  submenu?: TitleBarMenu;
 }
 
 export interface TitleBarMenu {
@@ -37,6 +38,7 @@ export class TitleBar implements OnDestroy {
 
   protected readonly isMaximized = signal(false);
   protected readonly openMenu = signal<string | null>(null);
+  protected readonly openSubmenu = signal<string | null>(null);
 
   protected readonly menus = computed<TitleBarMenu[]>(() => [
     {
@@ -75,14 +77,22 @@ export class TitleBar implements OnDestroy {
           action: () => this.toggleFullScreen(),
         },
         {
-          label: this.i18n.t('menu.view.readMode'),
-          checked: this.document.mode() === 'read',
-          action: () => this.document.setMode('read'),
-        },
-        {
-          label: this.i18n.t('menu.view.editMode'),
-          checked: this.document.mode() === 'edit',
-          action: () => this.document.setMode('edit'),
+          label: this.i18n.t('menu.view.mode'),
+          submenu: {
+            label: this.i18n.t('menu.view.mode'),
+            items: [
+              {
+                label: this.i18n.t('menu.view.readMode'),
+                checked: this.document.mode() === 'read',
+                action: () => this.document.setMode('read'),
+              },
+              {
+                label: this.i18n.t('menu.view.editMode'),
+                checked: this.document.mode() === 'edit',
+                action: () => this.document.setMode('edit'),
+              },
+            ],
+          },
         },
       ],
     },
@@ -129,6 +139,7 @@ export class TitleBar implements OnDestroy {
 
   protected toggleMenu(label: string): void {
     this.openMenu.set(this.openMenu() === label ? null : label);
+    this.openSubmenu.set(null);
   }
 
   protected hoverMenu(label: string): void {
@@ -139,6 +150,7 @@ export class TitleBar implements OnDestroy {
 
   protected runItem(item: TitleBarMenuItem): void {
     this.openMenu.set(null);
+    this.openSubmenu.set(null);
     item.action?.();
   }
 
@@ -151,6 +163,7 @@ export class TitleBar implements OnDestroy {
   protected onDocumentClick(event: MouseEvent): void {
     if (!this.element.nativeElement.contains(event.target as Node)) {
       this.openMenu.set(null);
+      this.openSubmenu.set(null);
     }
   }
 
@@ -158,6 +171,7 @@ export class TitleBar implements OnDestroy {
   protected onDocumentKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       this.openMenu.set(null);
+      this.openSubmenu.set(null);
     }
   }
 }

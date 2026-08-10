@@ -24,18 +24,48 @@
           @if (openMenu() === menu.label) {
             <div class="menu-dropdown">
               @for (item of menu.items; track item.label) {
-                <button
-                  type="button"
-                  class="menu-item"
-                  (click)="runItem(item)"
-                >
-                  <span class="menu-check">
-                    @if (item.checked) {
-                      <span>✓</span>
+                @if (item.submenu) {
+                  <div
+                    class="menu-item menu-item-submenu"
+                    [class.open]="openSubmenu() === item.label"
+                    (mouseenter)="openSubmenu.set(item.label)"
+                  >
+                    <span class="menu-check"></span>
+                    <span class="menu-item-text">{{ item.label }}</span>
+                    <span class="menu-arrow">▸</span>
+                    @if (openSubmenu() === item.label) {
+                      <div class="menu-dropdown menu-dropdown-sub">
+                        @for (subItem of item.submenu.items; track subItem.label) {
+                          <button
+                            type="button"
+                            class="menu-item"
+                            (click)="runItem(subItem)"
+                          >
+                            <span class="menu-check">
+                              @if (subItem.checked) {
+                                <span>✓</span>
+                              }
+                            </span>
+                            {{ subItem.label }}
+                          </button>
+                        }
+                      </div>
                     }
-                  </span>
-                  {{ item.label }}
-                </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="menu-item"
+                    (click)="runItem(item)"
+                  >
+                    <span class="menu-check">
+                      @if (item.checked) {
+                        <span>✓</span>
+                      }
+                    </span>
+                    {{ item.label }}
+                  </button>
+                }
               }
             </div>
           }
