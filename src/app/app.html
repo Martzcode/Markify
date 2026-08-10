@@ -2,7 +2,7 @@
   <app-title-bar />
   <main class="app-content">
     <router-outlet />
-    @if (document.filePath()) {
+    @if (document.isOpen()) {
       <app-editor-view />
     } @else {
       <div class="welcome">
@@ -11,4 +11,8 @@
       </div>
     }
   </main>
+
+  @if (toast.message(); as message) {
+    <div class="toast">{{ message }}</div>
+  }
 </div>

@@ -42,12 +42,18 @@ export class TitleBar implements OnDestroy {
     {
       label: this.i18n.t('menu.file'),
       items: [
-        { label: this.i18n.t('menu.file.new') },
+        {
+          label: this.i18n.t('menu.file.new'),
+          action: () => this.document.newFile(),
+        },
         {
           label: this.i18n.t('menu.file.open'),
           action: () => this.document.openFile(),
         },
-        { label: this.i18n.t('menu.file.save') },
+        {
+          label: this.i18n.t('menu.file.save'),
+          action: () => this.document.saveFile(),
+        },
         { label: this.i18n.t('menu.file.exit'), action: () => this.win.close() },
       ],
     },

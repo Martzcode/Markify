@@ -4,6 +4,7 @@ import { EditorView } from './components/editor-view/editor-view';
 import { TitleBar } from './components/title-bar/title-bar';
 import { I18nService } from './i18n/i18n.service';
 import { DocumentService } from './services/document.service';
+import { ToastService } from './services/toast.service';
 
 @Component({
   selector: 'app-root',
@@ -14,4 +15,5 @@ import { DocumentService } from './services/document.service';
 export class App {
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
+  protected readonly toast = inject(ToastService);
 }

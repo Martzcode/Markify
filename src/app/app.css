@@ -46,3 +46,29 @@ p {
   margin: 0;
   color: #9e9e9e;
 }
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1000;
+  padding: 10px 16px;
+  background: #2d2d2d;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+  color: #d4d4d4;
+  font-size: 13px;
+  animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
