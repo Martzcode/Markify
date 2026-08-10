@@ -21,7 +21,7 @@
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  background: #1e1e1e;
+  background: var(--app-bg);
 }
 
 .welcome {
@@ -39,12 +39,12 @@ h1 {
   font-weight: 500;
   letter-spacing: -0.125rem;
   margin: 0;
-  color: #ffffff;
+  color: var(--text-heading);
 }
 
 p {
   margin: 0;
-  color: #9e9e9e;
+  color: var(--text-secondary);
 }
 
 .toast {
@@ -53,11 +53,11 @@ p {
   bottom: 24px;
   z-index: 1000;
   padding: 10px 16px;
-  background: #2d2d2d;
-  border: 1px solid #454545;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
-  color: #d4d4d4;
+  box-shadow: var(--shadow);
+  color: var(--menu-fg);
   font-size: 13px;
   animation: toast-in 0.2s ease;
 }

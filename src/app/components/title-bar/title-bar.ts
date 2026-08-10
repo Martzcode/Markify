@@ -42,6 +42,7 @@ export class TitleBar implements OnDestroy {
   protected readonly isMaximized = signal(false);
   protected readonly openMenu = signal<string | null>(null);
   protected readonly openSubmenu = signal<string | null>(null);
+  protected readonly isMac = /Mac/i.test(navigator.userAgent);
 
   protected readonly menus = computed<TitleBarMenu[]>(() => [
     {

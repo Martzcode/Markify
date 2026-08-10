@@ -1,5 +1,59 @@
 /* Global styles */
 
+:root {
+  color-scheme: dark;
+
+  --titlebar-bg: #323233;
+  --titlebar-fg: #cccccc;
+  --titlebar-hover-bg: #3c3c3c;
+  --menu-bg: #252526;
+  --menu-fg: #cccccc;
+  --menu-hover-bg: #094771;
+  --menu-hover-fg: #ffffff;
+  --menu-disabled-fg: #6e6e6e;
+  --menu-border: #454545;
+  --app-bg: #1e1e1e;
+  --editor-bg: #1e1e1e;
+  --editor-fg: #d4d4d4;
+  --code-bg: #2d2d2d;
+  --text-heading: #ffffff;
+  --text-secondary: #9e9e9e;
+  --border: #454545;
+  --accent: #3794ff;
+  --error-bg: #5a1d1d;
+  --error-fg: #ffd7d7;
+  --error-border: #e81123;
+  --close-hover-bg: #e81123;
+  --shadow: 0 2px 8px rgb(0 0 0 / 40%);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --titlebar-bg: #f3f3f3;
+  --titlebar-fg: #333333;
+  --titlebar-hover-bg: #e5e5e5;
+  --menu-bg: #f3f3f3;
+  --menu-fg: #333333;
+  --menu-hover-bg: #0078d4;
+  --menu-hover-fg: #ffffff;
+  --menu-disabled-fg: #9e9e9e;
+  --menu-border: #c8c8c8;
+  --app-bg: #ffffff;
+  --editor-bg: #ffffff;
+  --editor-fg: #24292f;
+  --code-bg: #f6f8fa;
+  --text-heading: #1f2328;
+  --text-secondary: #57606a;
+  --border: #d0d7de;
+  --accent: #0969da;
+  --error-bg: #fde2e2;
+  --error-fg: #a40e26;
+  --error-border: #e81123;
+  --close-hover-bg: #e81123;
+  --shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+
 html,
 body {
   margin: 0;

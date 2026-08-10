@@ -1,6 +1,7 @@
 <header class="titlebar">
   <div
     class="titlebar-left"
+    [class.mac]="isMac"
     data-tauri-drag-region
     (dblclick)="onToggleMaximize()"
   >
@@ -75,7 +76,8 @@
       }
     </nav>
   </div>
-  <div class="titlebar-right">
+  @if (!isMac) {
+    <div class="titlebar-right">
     <button
       type="button"
       class="win-btn"
@@ -134,5 +136,6 @@
         <path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.1" />
       </svg>
     </button>
-  </div>
+    </div>
+  }
 </header>
