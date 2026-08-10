@@ -36,7 +36,7 @@ export const enTranslations = {
   'dialog.save.defaultName': 'untitled',
   'toast.saved': 'Changes saved',
   'welcome.hello': 'Hello, Markify!',
-  'welcome.subtitle': 'Your markdown editor is ready. 🚀',
+  'welcome.subtitle': 'Your markdown editor is ready.',
 } as const;
 
 export type TranslationKey = keyof typeof enTranslations;
@@ -70,7 +70,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'dialog.save.defaultName': 'sans-titre',
     'toast.saved': 'Modifications enregistrées',
     'welcome.hello': 'Bonjour, Markify !',
-    'welcome.subtitle': 'Votre éditeur Markdown est prêt. 🚀',
+    'welcome.subtitle': 'Votre éditeur Markdown est prêt.',
   } satisfies Record<TranslationKey, string>,
   de: {
     'app.name': 'Markify',
@@ -99,7 +99,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'dialog.save.defaultName': 'unbenannt',
     'toast.saved': 'Änderungen gespeichert',
     'welcome.hello': 'Hallo, Markify!',
-    'welcome.subtitle': 'Ihr Markdown-Editor ist bereit. 🚀',
+    'welcome.subtitle': 'Ihr Markdown-Editor ist bereit.',
   } satisfies Record<TranslationKey, string>,
   es: {
     'app.name': 'Markify',
@@ -128,6 +128,6 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'dialog.save.defaultName': 'sin-título',
     'toast.saved': 'Cambios guardados',
     'welcome.hello': '¡Hola, Markify!',
-    'welcome.subtitle': 'Tu editor de Markdown está listo. 🚀',
+    'welcome.subtitle': 'Tu editor de Markdown está listo.',
   } satisfies Record<TranslationKey, string>,
 };
