@@ -12,6 +12,7 @@ import { I18nService } from '../../i18n/i18n.service';
 import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
+import { AboutDialogService } from '../../services/about-dialog.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -37,6 +38,7 @@ export class TitleBar implements OnDestroy {
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
   private readonly editorRef = inject(EditorRefService);
+  private readonly aboutDialog = inject(AboutDialogService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -135,7 +137,12 @@ export class TitleBar implements OnDestroy {
     },
     {
       label: this.i18n.t('menu.help'),
-      items: [{ label: this.i18n.t('menu.help.about') }],
+      items: [
+        {
+          label: this.i18n.t('menu.help.about'),
+          action: () => this.aboutDialog.open(),
+        },
+      ],
     },
   ]);
 

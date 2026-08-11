@@ -1,0 +1,21 @@
+<div class="about-backdrop" (click)="about.close()">
+  <div
+    class="about-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-label="{{ i18n.t('menu.help.about') }}"
+    (click)="$event.stopPropagation()"
+  >
+    <img src="app-icon.png" alt="" class="about-icon" draggable="false" />
+    <h2 class="about-name">{{ i18n.t('app.name') }}</h2>
+    <p class="about-version">{{ i18n.t('about.version') }} {{ version }}</p>
+    <p class="about-description">{{ i18n.t('about.description') }}</p>
+    <div class="about-developer">
+      <span class="about-developer-label">{{ i18n.t('about.developedBy') }}</span>
+      <span class="about-developer-name">{{ developer }}</span>
+    </div>
+    <button type="button" class="about-close" (click)="about.close()">
+      {{ i18n.t('about.close') }}
+    </button>
+  </div>
+</div>

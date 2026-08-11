@@ -1,0 +1,88 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 45%);
+}
+
+.about-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 320px;
+  padding: 28px 24px 20px;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--menu-fg);
+  text-align: center;
+}
+
+.about-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+.about-name {
+  margin: 12px 0 2px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.about-version {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.about-description {
+  margin: 14px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.about-developer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.about-developer-label {
+  color: var(--text-secondary);
+}
+
+.about-developer-name {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.about-close {
+  min-width: 96px;
+  padding: 6px 16px;
+  background: var(--code-bg);
+  border: 1px solid var(--menu-border);
+  border-radius: 6px;
+  color: var(--menu-fg);
+  font: inherit;
+  font-size: 13px;
+  cursor: default;
+}
+
+.about-close:hover {
+  background: var(--titlebar-hover-bg);
+}

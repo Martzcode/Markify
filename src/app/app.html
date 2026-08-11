@@ -16,3 +16,7 @@
     <div class="toast">{{ message }}</div>
   }
 </div>
+
+@if (about.isOpen()) {
+  <app-about-dialog />
+}
