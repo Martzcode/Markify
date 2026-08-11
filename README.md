@@ -24,7 +24,7 @@
 
 ### Features
 
-- **Open & save** Markdown files (`.md`, `.markdown`) with native file dialogs
+- **Open & save** Markdown files (`.md`, `.markdown`, `.mdx`) with native file dialogs
 - **Three view modes**: Read, Edit, and Hybrid (edit + live preview side by side)
 - **Undo/Redo** with grouped typing history, **Cut/Copy/Paste** via the native clipboard
 - **4 languages**: Français, English, Deutsch, Español
@@ -95,7 +95,7 @@ AGPL-3.0
 
 ### Fonctionnalités
 
-- **Ouvrir & enregistrer** des fichiers Markdown (`.md`, `.markdown`) avec les boîtes de dialogue natives
+- **Ouvrir & enregistrer** des fichiers Markdown (`.md`, `.markdown`, `.mdx`) avec les boîtes de dialogue natives
 - **Trois modes de vue** : Lecture, Édition et Hybride (édition + aperçu en direct côte à côte)
 - **Annuler/Rétablir** avec historique de frappe groupé, **Couper/Copier/Coller** via le presse-papiers natif
 - **4 langues** : Français, English, Deutsch, Español

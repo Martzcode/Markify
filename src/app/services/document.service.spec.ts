@@ -45,6 +45,21 @@ describe('DocumentService', () => {
     expect(service.isOpen()).toBe(false);
   });
 
+  it('accepts mdx files in the open dialog', async () => {
+    vi.mocked(open).mockResolvedValue('/tmp/doc.mdx');
+    vi.mocked(invoke).mockResolvedValue('import { Chart } from "./chart";');
+
+    await service.openFile();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
+      }),
+    );
+    expect(service.filePath()).toBe('/tmp/doc.mdx');
+    expect(service.mode()).toBe('read');
+  });
+
   it('reports an error when the file cannot be read', async () => {
     vi.mocked(open).mockResolvedValue('/tmp/missing.md');
     vi.mocked(invoke).mockRejectedValue(new Error('file not found'));

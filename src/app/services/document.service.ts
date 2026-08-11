@@ -44,7 +44,7 @@ export class DocumentService {
     this.error.set(null);
     const path = await open({
       title: this.i18n.t('dialog.open.title'),
-      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+      filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
       multiple: false,
     });
     if (typeof path !== 'string') {
@@ -71,7 +71,7 @@ export class DocumentService {
       path = await save({
         title: this.i18n.t('dialog.save.title'),
         defaultPath: this.i18n.t('dialog.save.defaultName') + '.md',
-        filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+        filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
       });
       if (!path) {
         return;
