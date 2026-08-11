@@ -3,13 +3,22 @@
     <div class="editor-error">{{ error }}</div>
   }
   @if (document.mode() === 'edit' || document.mode() === 'hybrid') {
-    <textarea
-      #input
-      class="editor-input"
-      [value]="document.content()"
-      (input)="onInput($event)"
-      spellcheck="false"
-    ></textarea>
+    <div class="editor-input-wrap">
+      <pre
+        #highlight
+        class="editor-highlight"
+        aria-hidden="true"
+        [innerHTML]="highlightedHtml()"
+      ></pre>
+      <textarea
+        #input
+        class="editor-input"
+        [value]="document.content()"
+        (input)="onInput($event)"
+        (scroll)="onScroll()"
+        spellcheck="false"
+      ></textarea>
+    </div>
   }
   @if (document.mode() === 'read' || document.mode() === 'hybrid') {
     <div class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>

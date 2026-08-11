@@ -25,6 +25,13 @@
   --error-border: #e81123;
   --close-hover-bg: #e81123;
   --shadow: 0 2px 8px rgb(0 0 0 / 40%);
+
+  --syn-heading: #569cd6;
+  --syn-punct: #569cd6;
+  --syn-code: #ce9178;
+  --syn-link: #3794ff;
+  --syn-blockquote: #6a9955;
+  --syn-del: #9e9e9e;
 }
 
 :root[data-theme='light'] {
@@ -52,6 +59,13 @@
   --error-border: #e81123;
   --close-hover-bg: #e81123;
   --shadow: 0 2px 8px rgb(0 0 0 / 15%);
+
+  --syn-heading: #005cc5;
+  --syn-punct: #005cc5;
+  --syn-code: #a31515;
+  --syn-link: #0969da;
+  --syn-blockquote: #008000;
+  --syn-del: #57606a;
 }
 
 html,

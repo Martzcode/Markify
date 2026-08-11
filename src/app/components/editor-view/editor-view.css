@@ -28,20 +28,109 @@
   font-size: 13px;
 }
 
-.editor-input {
+.editor-input-wrap {
+  position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  width: 100%;
+}
+
+.editor-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  color: var(--editor-fg);
+}
+
+.editor-input {
+  position: absolute;
+  inset: 0;
   padding: 16px;
   border: none;
   outline: none;
   resize: none;
-  background: var(--editor-bg);
-  color: var(--editor-fg);
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--editor-fg);
   font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   box-sizing: border-box;
+}
+
+.editor-input::selection {
+  background: rgb(55 148 255 / 25%);
+}
+
+:host ::ng-deep .editor-highlight .syn-punct {
+  color: var(--syn-punct);
+}
+
+:host ::ng-deep .editor-highlight .syn-heading {
+  color: var(--syn-heading);
+  font-weight: 600;
+}
+
+:host ::ng-deep .editor-highlight .syn-code {
+  color: var(--syn-code);
+  background: var(--code-bg);
+}
+
+:host ::ng-deep .editor-highlight .syn-code-block {
+  display: block;
+  background: var(--code-bg);
+  border-radius: 4px;
+  color: var(--syn-code);
+}
+
+:host ::ng-deep .editor-highlight .syn-link {
+  color: var(--syn-link);
+}
+
+:host ::ng-deep .editor-highlight .syn-blockquote {
+  color: var(--syn-blockquote);
+}
+
+:host ::ng-deep .editor-highlight .syn-del {
+  color: var(--syn-del);
+  text-decoration: line-through;
+}
+
+:host ::ng-deep .editor-highlight .syn-strong {
+  font-weight: 600;
+}
+
+:host ::ng-deep .editor-highlight .syn-em {
+  font-style: italic;
+}
+
+:host ::ng-deep .editor-highlight .syn-hr {
+  display: block;
+  color: var(--syn-punct);
+}
+
+:host ::ng-deep .editor-highlight .syn-escape {
+  color: var(--syn-punct);
+}
+
+:host ::ng-deep .editor-highlight .syn-task-pending {
+  color: var(--syn-punct);
+}
+
+:host ::ng-deep .editor-highlight .syn-task-done {
+  color: var(--syn-blockquote);
 }
 
 .editor-preview {
@@ -57,8 +146,15 @@
 }
 
 :host ::ng-deep .markdown-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   font-size: 15px;
   line-height: 1.7;
   color: var(--editor-fg);
