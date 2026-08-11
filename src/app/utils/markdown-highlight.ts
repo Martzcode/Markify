@@ -8,6 +8,8 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>]/g, (ch) => ESCAPES[ch]);
 }
 
+export { escapeHtml };
+
 function span(className: string, content: string): string {
   return `<span class="syn-${className}">${content}</span>`;
 }

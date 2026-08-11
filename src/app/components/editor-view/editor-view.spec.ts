@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { DocumentService } from '../../services/document.service';
 
@@ -52,5 +54,25 @@ describe('EditorView', () => {
 
     textarea.dispatchEvent(new Event('scroll'));
     expect(highlight.scrollTop).toBe(textarea.scrollTop);
+  });
+
+  it('shows a copy button on code blocks and copies on click', async () => {
+    vi.mocked(writeText).mockResolvedValue();
+    const fixture = createFixture('```bash\nnpm install\n```', 'read');
+
+    const button = fixture.nativeElement.querySelector('.code-copy') as HTMLElement;
+    expect(button).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Copy');
+
+    button.click();
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('npm install');
+    });
+    expect(button.querySelector('.code-copy-label')!.textContent).toContain('Copied');
+  });
+
+  it('does not show a copy button for inline code', () => {
+    const fixture = createFixture('use `marked` inline', 'read');
+    expect(fixture.nativeElement.querySelector('.code-copy')).toBeNull();
   });
 });

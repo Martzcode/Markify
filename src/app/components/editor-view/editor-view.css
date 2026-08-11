@@ -212,7 +212,79 @@
   border-radius: 6px;
 }
 
-:host ::ng-deep .markdown-body pre code {
+:host ::ng-deep .markdown-body .code-block {
+  margin: 1em 0;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+:host ::ng-deep .markdown-body .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 4px 14px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+:host ::ng-deep .markdown-body .code-block-lang {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+:host ::ng-deep .markdown-body .code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: default;
+}
+
+:host ::ng-deep .markdown-body .code-copy:hover {
+  background: var(--titlebar-hover-bg);
+  color: var(--menu-fg);
+}
+
+:host ::ng-deep .markdown-body .code-copy-icon {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin: 3px 0 0 3px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+:host ::ng-deep .markdown-body .code-copy-icon::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  box-sizing: border-box;
+}
+
+:host ::ng-deep .markdown-body .code-block pre {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 0;
+  background: none;
+}
+
+:host ::ng-deep .markdown-body .code-block pre code {
   padding: 0;
   background: none;
   border-radius: 0;
