@@ -22,6 +22,14 @@ Tauri exige une version semver : `2026.08.1` est invalide (semver interdit les z
 
 Le nom des artefacts reflète la version semver (ex. `Markify_2026.8.2_x64-setup.exe`).
 
+### Contrainte MSI Windows
+
+L'installateur MSI limite chaque segment de version à 255 : `2026.8.2` est rejeté ("app version major number cannot be greater than 255"). Le script définit donc une **version MSI dédiée** dans `tauri.conf.json > bundle.windows.wix.version` : année − 2000 (ex. `26.8.2`), utilisée uniquement par l'installateur MSI. Le NSIS garde la version semver (compatible, max 65535 par segment).
+
+### Windows x64 uniquement
+
+Le build Windows est verrouillé sur `x86_64-pc-windows-msvc` (`--target`). Les noms d'artefacts portent l'architecture : `Markify_2026.8.2_x64.msi` et `Markify_2026.8.2_x64-setup.exe` (le suffixe de langue `en-US` de Tauri est retiré du nom du MSI par le workflow).
+
 ## Points d'attention
 
 - **Artefacts non signés** : aucun certificat de signature n'est configuré (Apple Developer, Windows Authenticode). Résultats :
