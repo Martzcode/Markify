@@ -10,6 +10,16 @@ fn write_markdown_file(path: String, content: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  let context = tauri::generate_context!();
+
+  #[cfg(target_os = "linux")]
+  {
+    // The Wayland app id (used by KDE/GNOME to resolve the taskbar icon
+    // from the .desktop file) falls back to the GLib prgname. Set it to the
+    // app identifier so it matches "<identifier>.desktop".
+    gtk::glib::set_prgname(Some(&context.config().identifier));
+  }
+
   tauri::Builder::default()
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
@@ -24,6 +34,6 @@ pub fn run() {
       }
       Ok(())
     })
-    .run(tauri::generate_context!())
+    .run(context)
     .expect("error while running tauri application");
 }
