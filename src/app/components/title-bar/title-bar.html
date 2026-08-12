@@ -33,6 +33,9 @@
                   >
                     <span class="menu-check"></span>
                     <span class="menu-item-text">{{ item.label }}</span>
+                    @if (item.shortcut) {
+                      <span class="menu-shortcut">{{ item.shortcut }}</span>
+                    }
                     <span class="menu-arrow">▸</span>
                     @if (openSubmenu() === item.label) {
                       <div class="menu-dropdown menu-dropdown-sub">
@@ -67,6 +70,9 @@
                       }
                     </span>
                     {{ item.label }}
+                    @if (item.shortcut) {
+                      <span class="menu-shortcut">{{ item.shortcut }}</span>
+                    }
                   </button>
                 }
               }

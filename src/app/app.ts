@@ -6,6 +6,7 @@ import { TitleBar } from './components/title-bar/title-bar';
 import { I18nService } from './i18n/i18n.service';
 import { AboutDialogService } from './services/about-dialog.service';
 import { DocumentService } from './services/document.service';
+import { KeyboardShortcutsService } from './services/keyboard-shortcuts.service';
 import { ToastService } from './services/toast.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { ToastService } from './services/toast.service';
   styleUrl: './app.css',
 })
 export class App {
+  private readonly shortcuts = inject(KeyboardShortcutsService);
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
   protected readonly toast = inject(ToastService);

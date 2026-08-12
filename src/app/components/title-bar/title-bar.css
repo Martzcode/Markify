@@ -128,6 +128,12 @@
   flex: 1;
 }
 
+.menu-shortcut {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-left: 16px;
+}
+
 .menu-arrow {
   font-size: 10px;
   color: var(--text-secondary);

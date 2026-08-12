@@ -18,6 +18,7 @@ export interface TitleBarMenuItem {
   label: string;
   checked?: boolean;
   disabled?: boolean;
+  shortcut?: string;
   action?: () => void;
   submenu?: TitleBarMenu;
 }
@@ -45,6 +46,8 @@ export class TitleBar implements OnDestroy {
   protected readonly openMenu = signal<string | null>(null);
   protected readonly openSubmenu = signal<string | null>(null);
   protected readonly isMac = /Mac/i.test(navigator.userAgent);
+  protected readonly modKey = this.isMac ? '⌘' : 'Ctrl+';
+  protected readonly redoKey = this.isMac ? '⌘⇧Z' : 'Ctrl+Y';
 
   protected readonly menus = computed<TitleBarMenu[]>(() => [
     {
@@ -52,14 +55,17 @@ export class TitleBar implements OnDestroy {
       items: [
         {
           label: this.i18n.t('menu.file.new'),
+          shortcut: `${this.modKey}N`,
           action: () => this.document.newFile(),
         },
         {
           label: this.i18n.t('menu.file.open'),
+          shortcut: `${this.modKey}O`,
           action: () => this.document.openFile(),
         },
         {
           label: this.i18n.t('menu.file.save'),
+          shortcut: `${this.modKey}S`,
           action: () => this.document.saveFile(),
         },
         { label: this.i18n.t('menu.file.exit'), action: () => this.win.close() },
@@ -70,26 +76,31 @@ export class TitleBar implements OnDestroy {
       items: [
         {
           label: this.i18n.t('menu.edit.undo'),
+          shortcut: `${this.modKey}Z`,
           disabled: !this.document.canUndo(),
           action: () => this.document.undo(),
         },
         {
           label: this.i18n.t('menu.edit.redo'),
+          shortcut: this.redoKey,
           disabled: !this.document.canRedo(),
           action: () => this.document.redo(),
         },
         {
           label: this.i18n.t('menu.edit.cut'),
+          shortcut: `${this.modKey}X`,
           disabled: !this.editorRef.textarea(),
           action: () => this.document.cutSelection(),
         },
         {
           label: this.i18n.t('menu.edit.copy'),
+          shortcut: `${this.modKey}C`,
           disabled: !this.editorRef.textarea(),
           action: () => this.document.copySelection(),
         },
         {
           label: this.i18n.t('menu.edit.paste'),
+          shortcut: `${this.modKey}V`,
           disabled: !this.editorRef.textarea(),
           action: () => this.document.pasteFromClipboard(),
         },
@@ -100,6 +111,7 @@ export class TitleBar implements OnDestroy {
       items: [
         {
           label: this.i18n.t('menu.view.fullscreen'),
+          shortcut: 'F11',
           action: () => this.toggleFullScreen(),
         },
         {

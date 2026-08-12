@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
-vi.mock('@tauri-apps/api/window', () => ({
-  getCurrentWindow: () => ({
+vi.mock('@tauri-apps/api/window', () => {
+  const windowMock = {
     minimize: vi.fn().mockResolvedValue(undefined),
     toggleMaximize: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
@@ -9,8 +9,9 @@ vi.mock('@tauri-apps/api/window', () => ({
     setFullscreen: vi.fn().mockResolvedValue(undefined),
     isFullscreen: vi.fn().mockResolvedValue(false),
     onResized: vi.fn().mockResolvedValue(() => {}),
-  }),
-}));
+  };
+  return { getCurrentWindow: () => windowMock };
+});
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
