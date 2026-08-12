@@ -161,4 +161,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd artifacts
-          gh release create "${{ needs.version.outputs.tag }}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f)
+          gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f)
