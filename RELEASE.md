@@ -9,7 +9,18 @@ Workflow : `.github/workflows/build-release.yml`
   - Fedora : `.rpm`
   - macOS : `.dmg` universel (Intel + Apple Silicon)
 
-La version est appliquée par `.github/scripts/bump-version.mjs` dans `package.json`, `src-tauri/tauri.conf.json` et `src-tauri/Cargo.toml`.
+La version est appliquée dans `package.json`, `src-tauri/tauri.conf.json` et `src-tauri/Cargo.toml`.
+
+## Deux formats de version
+
+Tauri exige une version semver : `2026.08.1` est invalide (semver interdit les zéros en tête). Il y a donc deux numéros par release :
+
+| Usage | Format | Exemple |
+|---|---|---|
+| Tag et titre de la release GitHub | CalVer `YYYY.MM.x` | `2026.08.2` |
+| Version interne (configs, installateurs) | Semver `YYYY.M.x` | `2026.8.2` |
+
+Le nom des artefacts reflète la version semver (ex. `Markify_2026.8.2_x64-setup.exe`).
 
 ## Points d'attention
 
