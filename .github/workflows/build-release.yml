@@ -70,29 +70,29 @@ jobs:
             args: --target x86_64-pc-windows-msvc
             targets: x86_64-pc-windows-msvc
             artifact_paths: |
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           - name: macos
             platform: macos-latest
             bundles: dmg
             args: --target universal-apple-darwin
             targets: aarch64-apple-darwin,x86_64-apple-darwin
             artifact_paths: |
-              src-tauri/target/universal-apple-darwin/release/bundle/dmg/*
+              src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           - name: debian
             platform: ubuntu-latest
             bundles: deb
             args: ''
             targets: ''
             artifact_paths: |
-              src-tauri/target/release/bundle/deb/*
+              src-tauri/target/release/bundle/deb/*.deb
           - name: fedora
             platform: ubuntu-latest
             bundles: rpm
             args: ''
             targets: ''
             artifact_paths: |
-              src-tauri/target/release/bundle/rpm/*
+              src-tauri/target/release/bundle/rpm/*.rpm
 
     steps:
       - uses: actions/checkout@v4
@@ -161,4 +161,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd artifacts
-          gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f)
+          gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' \))
