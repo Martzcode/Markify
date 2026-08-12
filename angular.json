@@ -69,7 +69,8 @@
           "options": {
             "setupFiles": [
               "src/test-setup.ts"
-            ]
+            ],
+            "isolate": true
           }
         }
       }

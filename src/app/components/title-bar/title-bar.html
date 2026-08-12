@@ -37,25 +37,24 @@
                       <span class="menu-shortcut">{{ item.shortcut }}</span>
                     }
                     <span class="menu-arrow">▸</span>
-                    @if (openSubmenu() === item.label) {
-                      <div class="menu-dropdown menu-dropdown-sub">
-                        @for (subItem of item.submenu.items; track subItem.label) {
-                          <button
-                            type="button"
-                            class="menu-item"
-                            [disabled]="subItem.disabled"
-                            (click)="runItem(subItem)"
-                          >
-                            <span class="menu-check">
-                              @if (subItem.checked) {
-                                <span>✓</span>
-                              }
-                            </span>
-                            {{ subItem.label }}
-                          </button>
-                        }
-                      </div>
-                    }
+@if (openSubmenu() === item.label) {
+                    <div class="menu-dropdown menu-dropdown-sub">
+                      @for (subItem of item.submenu.items; track subItem.label) {
+                        <button
+                          type="button"
+                          class="menu-item"
+                          [disabled]="subItem.disabled"
+                          (click)="runItem(subItem)"
+                          [class.menu-item-radio]="subItem.checked !== undefined"
+                        >
+                          <span class="menu-item-text">{{ subItem.label }}</span>
+                          @if (subItem.checked) {
+                            <span class="menu-check">✓</span>
+                          }
+                        </button>
+                      }
+                    </div>
+                  }
                   </div>
                 } @else {
                   <button
@@ -63,13 +62,12 @@
                     class="menu-item"
                     [disabled]="item.disabled"
                     (click)="runItem(item)"
+                    [class.menu-item-radio]="item.checked !== undefined"
                   >
-                    <span class="menu-check">
-                      @if (item.checked) {
-                        <span>✓</span>
-                      }
-                    </span>
-                    {{ item.label }}
+                    <span class="menu-item-text">{{ item.label }}</span>
+                    @if (item.checked) {
+                      <span class="menu-check">✓</span>
+                    }
                     @if (item.shortcut) {
                       <span class="menu-shortcut">{{ item.shortcut }}</span>
                     }

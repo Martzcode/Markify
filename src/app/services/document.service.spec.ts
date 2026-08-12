@@ -13,10 +13,13 @@ describe('DocumentService', () => {
   let editorRef: EditorRefService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     service = TestBed.inject(DocumentService);
     toast = TestBed.inject(ToastService);
     editorRef = TestBed.inject(EditorRefService);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('opens a markdown file and switches to read mode', async () => {
@@ -36,7 +39,7 @@ describe('DocumentService', () => {
   });
 
   it('does nothing when the open dialog is cancelled', async () => {
-    vi.mocked(open).mockResolvedValue(null);
+    vi.mocked(open).mockImplementation(() => Promise.resolve(null));
 
     await service.openFile();
 
@@ -119,7 +122,7 @@ describe('DocumentService', () => {
   });
 
   it('does nothing when the save dialog is cancelled', async () => {
-    vi.mocked(save).mockResolvedValue(null);
+    vi.mocked(save).mockImplementation(() => Promise.resolve(null));
     service.setContent('# New');
 
     await service.saveFile();
