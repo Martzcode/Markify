@@ -56,9 +56,13 @@ $manifest = @"
 "@
 $manifest | Out-File -FilePath "$staging/AppxManifest.xml" -Encoding utf8
 
-$kit = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Directory | Sort-Object Name -Descending | Select-Object -First 1
+$kit = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } | Sort-Object Name -Descending | Select-Object -First 1
 $makeAppx = "$($kit.FullName)\x64\MakeAppx.exe"
 $signtool = "$($kit.FullName)\x64\signtool.exe"
+if (-not (Test-Path $makeAppx)) {
+  $makeAppx = (Get-Command MakeAppx.exe -ErrorAction Stop).Source
+  $signtool = (Get-Command signtool.exe -ErrorAction Stop).Source
+}
 $msixPath = "$outDir/$productName`_$version`_x64.msix"
 & $makeAppx pack /d $staging /p $msixPath /o
 if ($LASTEXITCODE -ne 0) { throw 'MakeAppx failed' }
