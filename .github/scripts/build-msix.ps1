@@ -74,8 +74,9 @@ if ($env:MSIX_PFX_BASE64) {
 } else {
   $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=$productName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable
   $pfxPath = Join-Path $env:RUNNER_TEMP 'selfsigned.pfx'
-  Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password (ConvertTo-SecureString '' -AsPlainText -Force) | Out-Null
-  & $signtool sign /fd SHA256 /f $pfxPath $msixPath
+  $password = [Guid]::NewGuid().ToString()
+  Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password (ConvertTo-SecureString $password -AsPlainText -Force) | Out-Null
+  & $signtool sign /fd SHA256 /f $pfxPath /p $password $msixPath
 }
 if ($LASTEXITCODE -ne 0) { throw 'signtool failed' }
 
