@@ -1,0 +1,36 @@
+# Changelog
+
+Toutes les modifications notables de Markify sont documentées dans ce fichier.
+
+Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
+et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
+
+## [Non publié]
+
+### Ajouté
+
+- Export PDF complet depuis le menu **Fichier → Exporter…** (raccourci `Ctrl/Cmd+E`), avec dialogue d'enregistrement et nom de fichier par défaut basé sur le document ouvert.
+- Intégration des images distantes et locales dans les PDF exportés, redimensionnées à la largeur du contenu (comme dans l'aperçu).
+- Utilisation d'une police système adaptée au contenu du document pour les PDF exportés (symboles Unicode rendus correctement).
+
+### Corrigé
+
+- Symboles Unicode (ex. Ⓖ) qui s'affichaient comme un carré vide dans les PDF exportés.
+- Images inaccessibles ou invalides qui bloquaient l'export : elles sont désormais ignorées, avec un message récapitulatif à la fin de l'export.
+- Images trop grandes ou trop petites dans les PDF exportés (dimensionnement fidèle à l'aperçu).
+
+## [2026.08.1] - 2026-08-12
+
+### Ajouté
+
+- Markify : éditeur Markdown de bureau (Angular + Tauri) avec aperçu en direct.
+- Ouverture et lecture de fichiers `.md`.
+- Édition et sauvegarde des fichiers.
+- Barre de menus **Fichier / Édition** avec raccourcis clavier, y compris la barre de menus native sur macOS.
+- Mode de vue hybride (éditeur + aperçu).
+- Coloration syntaxique des blocs de code et bouton de copie.
+- Conversion d'un document en PDF (menu contextuel).
+- Interface multilingue : français, anglais, allemand et espagnol.
+- Fenêtre native (Windows, macOS, Linux) avec logo.
+- Dialogue **À propos**.
+- Workflow de build de release multiplateforme (GitHub Actions).
