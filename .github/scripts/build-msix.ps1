@@ -18,10 +18,12 @@ if ($env:MSIX_PFX_BASE64) {
   [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:MSIX_PFX_BASE64))
   $cert = Import-PfxCertificate -FilePath $pfxPath -Password (ConvertTo-SecureString $env:MSIX_PFX_PASSWORD -AsPlainText -Force) -CertStoreLocation 'Cert:\CurrentUser\My'
 } else {
-  $cert = New-SelfSignedCertificate -Type Custom -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -Subject "CN=$productName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
+  $publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { "CN=$productName" }
+  $cert = New-SelfSignedCertificate -Type Custom -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -Subject $publisher -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
 }
 $publisher = $cert.Subject
 $publisherDisplayName = if ($env:MSIX_PUBLISHER_DISPLAY_NAME) { $env:MSIX_PUBLISHER_DISPLAY_NAME } else { $productName }
+$identityName = if ($env:MSIX_IDENTITY_NAME) { $env:MSIX_IDENTITY_NAME } else { $identifier }
 
 Add-Type -AssemblyName System.Drawing
 $source = [System.Drawing.Image]::FromFile((Resolve-Path 'src-tauri/icons/128x128.png'))
@@ -40,7 +42,7 @@ $source.Dispose()
 $manifest = @"
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap rescap">
-  <Identity Name="$identifier" Publisher="$publisher" Version="$version.0" ProcessorArchitecture="x64"/>
+  <Identity Name="$identityName" Publisher="$publisher" Version="$version.0" ProcessorArchitecture="x64"/>
   <Properties>
     <DisplayName>$productName</DisplayName>
     <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>

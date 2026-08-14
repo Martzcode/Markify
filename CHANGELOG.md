@@ -5,6 +5,12 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.08.5] - 2026-08-14
+
+### Corrigé
+
+- Identité du paquet MSIX alignée sur l'identité réservée dans Partner Center (`Martzcode.Markify` et publisher Microsoft) — validation d'acceptation du Microsoft Store.
+
 ## [2026.08.4] - 2026-08-14
 
 ### Ajouté

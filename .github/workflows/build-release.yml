@@ -144,6 +144,8 @@ jobs:
           MSIX_PFX_BASE64: ${{ secrets.MSIX_PFX_BASE64 }}
           MSIX_PFX_PASSWORD: ${{ secrets.MSIX_PFX_PASSWORD }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME || 'Martzcode' }}
+          MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
         run: .github/scripts/build-msix.ps1
 
       - name: Upload artifacts
