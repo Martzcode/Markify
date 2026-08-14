@@ -24,6 +24,63 @@ export interface PdfExportResult {
   skippedImages: string[];
 }
 
+type PdfMakeModule = typeof import('pdfmake/build/pdfmake').default;
+
+const SYSTEM_FONT_FAMILY = 'SystemFont';
+const fontFamilyCache = new Map<string, Promise<string>>();
+
+function fontCacheKey(html: string): string {
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  const text = parsed.body.textContent ?? '';
+  return Array.from(new Set(text)).sort().join('');
+}
+
+async function ensureFontFamily(pdfMake: PdfMakeModule, html: string): Promise<string> {
+  const key = fontCacheKey(html);
+  let promise = fontFamilyCache.get(key);
+  if (!promise) {
+    promise = loadSystemFont(pdfMake, key);
+    fontFamilyCache.set(key, promise);
+  }
+  return promise;
+}
+
+async function loadSystemFont(pdfMake: PdfMakeModule, text: string): Promise<string> {
+  try {
+    const files = await invoke<Array<{ role: string; base64: string }>>('read_system_fonts', {
+      text,
+    });
+    if (!files || files.length === 0) {
+      return 'Roboto';
+    }
+    const vfs: Record<string, string> = {};
+    const descriptors: Record<string, string> = {};
+    for (const file of files) {
+      const name = `SystemFont-${file.role}.ttf`;
+      vfs[name] = file.base64;
+      descriptors[file.role] = name;
+    }
+    const normal = descriptors['normal'];
+    if (!normal) {
+      return 'Roboto';
+    }
+    pdfMake.addVirtualFileSystem(vfs);
+    const existing = (pdfMake.fonts ?? {}) as Record<string, unknown>;
+    pdfMake.fonts = {
+      ...existing,
+      [SYSTEM_FONT_FAMILY]: {
+        normal,
+        bold: descriptors['bold'] ?? normal,
+        italics: descriptors['italics'] ?? normal,
+        bolditalics: descriptors['bolditalics'] ?? normal,
+      },
+    };
+    return SYSTEM_FONT_FAMILY;
+  } catch {
+    return 'Roboto';
+  }
+}
+
 export async function generatePdf(html: string, baseDir: string | null): Promise<PdfExportResult> {
   const { html: resolvedHtml, skippedImages } = await resolveImages(html, baseDir);
   const [{ default: htmlToPdfmake }, { default: pdfMake }, { default: pdfFonts }] =
@@ -36,6 +93,7 @@ export async function generatePdf(html: string, baseDir: string | null): Promise
     pdfMake.addVirtualFileSystem(pdfFonts);
     fontsLoaded = true;
   }
+  const fontFamily = await ensureFontFamily(pdfMake, resolvedHtml);
   const content = htmlToPdfmake(resolvedHtml, { removeExtraBlanks: true }) as Content;
   constrainImages(content);
   const docDefinition: TDocumentDefinitions = {
@@ -45,6 +103,7 @@ export async function generatePdf(html: string, baseDir: string | null): Promise
     defaultStyle: {
       fontSize: 10.5,
       lineHeight: 1.35,
+      font: fontFamily,
     },
   };
   const pdf = pdfMake.createPdf(docDefinition);

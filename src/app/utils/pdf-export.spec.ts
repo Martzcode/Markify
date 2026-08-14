@@ -1,7 +1,45 @@
 import { deflateSync, inflateSync } from 'node:zlib';
+import { existsSync, readFileSync } from 'node:fs';
+import { invoke } from '@tauri-apps/api/core';
 import { generatePdf } from '../utils/pdf-export';
 
+const SYSTEM_FONT_CANDIDATES: Array<{ path: string; stem: string }> = [
+  { path: '/usr/share/fonts/rsms-inter-fonts/Inter-Regular.ttf', stem: 'Inter' },
+  { path: '/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf', stem: 'AdwaitaSans' },
+  { path: '/usr/share/fonts/google-noto/NotoSans-Regular.ttf', stem: 'NotoSans' },
+  { path: '/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf', stem: 'DejaVu' },
+  { path: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', stem: 'DejaVu' },
+];
+
 describe('pdf-export image sizing', () => {
+  beforeEach(() => {
+    const font = SYSTEM_FONT_CANDIDATES.find((candidate) => existsSync(candidate.path));
+    if (font) {
+      const base64 = Buffer.from(readFileSync(font.path)).toString('base64');
+      vi.mocked(invoke).mockResolvedValue([
+        { role: 'normal', base64 },
+        { role: 'bold', base64 },
+        { role: 'italics', base64 },
+        { role: 'bolditalics', base64 },
+      ]);
+    }
+  });
+
+  it('embeds a system font so unicode symbols render', async () => {
+    const font = SYSTEM_FONT_CANDIDATES.find((candidate) => existsSync(candidate.path));
+    if (!font) {
+      return;
+    }
+    const result = await generatePdf('<p>ⓒ Ⓖ Ⓐ</p>', null);
+
+    const text = Buffer.from(result.bytes).toString('latin1');
+    expect(text).toContain(font.stem);
+    if (font.stem === 'Inter' || font.stem === 'AdwaitaSans') {
+      const streams = inflateAllStreams(result.bytes);
+      expect(streams.some((s) => s.toLowerCase().includes('24bc'))).toBe(true);
+    }
+  });
+
   it('scales a large image down to the content width', async () => {
     const result = await generatePdf(
       `<p><img src="${pngDataUrl(1000, 500)}" alt="wide"></p>`,
