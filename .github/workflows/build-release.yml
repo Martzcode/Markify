@@ -143,7 +143,6 @@ jobs:
         env:
           MSIX_PFX_BASE64: ${{ secrets.MSIX_PFX_BASE64 }}
           MSIX_PFX_PASSWORD: ${{ secrets.MSIX_PFX_PASSWORD }}
-          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
         run: .github/scripts/build-msix.ps1
 
       - name: Upload artifacts

@@ -3,7 +3,6 @@ $config = Get-Content 'src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
 $productName = $config.productName
 $version = $config.version
 $identifier = $config.identifier
-$publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { "CN=$productName" }
 $releaseDir = Resolve-Path 'src-tauri/target/x86_64-pc-windows-msvc/release'
 $outDir = "$releaseDir/bundle/msix"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
@@ -13,6 +12,15 @@ New-Item -ItemType Directory -Force -Path $staging | Out-Null
 New-Item -ItemType Directory -Force -Path "$staging/Assets" | Out-Null
 Copy-Item "$releaseDir/$productName.exe" $staging
 Get-ChildItem $releaseDir -Filter *.dll | Copy-Item -Destination $staging
+
+if ($env:MSIX_PFX_BASE64) {
+  $pfxPath = Join-Path $env:RUNNER_TEMP 'signing.pfx'
+  [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:MSIX_PFX_BASE64))
+  $cert = Import-PfxCertificate -FilePath $pfxPath -Password (ConvertTo-SecureString $env:MSIX_PFX_PASSWORD -AsPlainText -Force) -CertStoreLocation 'Cert:\CurrentUser\My'
+} else {
+  $cert = New-SelfSignedCertificate -Type Custom -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -Subject "CN=$productName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
+}
+$publisher = $cert.Subject
 
 Add-Type -AssemblyName System.Drawing
 $source = [System.Drawing.Image]::FromFile((Resolve-Path 'src-tauri/icons/128x128.png'))
@@ -68,16 +76,16 @@ $msixPath = "$outDir/$productName`_$version`_x64.msix"
 if ($LASTEXITCODE -ne 0) { throw 'MakeAppx failed' }
 
 if ($env:MSIX_PFX_BASE64) {
-  $pfxPath = Join-Path $env:RUNNER_TEMP 'signing.pfx'
-  [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:MSIX_PFX_BASE64))
   & $signtool sign /fd SHA256 /f $pfxPath /p $env:MSIX_PFX_PASSWORD $msixPath
 } else {
-  $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=$productName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable
-  $pfxPath = Join-Path $env:RUNNER_TEMP 'selfsigned.pfx'
+  $exportPath = Join-Path $env:RUNNER_TEMP 'selfsigned.pfx'
   $password = [Guid]::NewGuid().ToString()
-  Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password (ConvertTo-SecureString $password -AsPlainText -Force) | Out-Null
-  & $signtool sign /fd SHA256 /f $pfxPath /p $password $msixPath
+  Export-PfxCertificate -Cert $cert -FilePath $exportPath -Password (ConvertTo-SecureString $password -AsPlainText -Force) | Out-Null
+  & $signtool sign /fd SHA256 /f $exportPath /p $password $msixPath
 }
-if ($LASTEXITCODE -ne 0) { throw 'signtool failed' }
+if ($LASTEXITCODE -ne 0) {
+  Get-WinEvent -LogName 'Microsoft-Windows-AppxPackaging/Operational' -MaxEvents 10 -ErrorAction SilentlyContinue | ForEach-Object { Write-Output "$($_.TimeCreated) $($_.Id) $($_.Message)" }
+  throw 'signtool failed'
+}
 
 Write-Output "MSIX built: $msixPath"
