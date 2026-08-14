@@ -21,6 +21,7 @@ if ($env:MSIX_PFX_BASE64) {
   $cert = New-SelfSignedCertificate -Type Custom -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -Subject "CN=$productName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
 }
 $publisher = $cert.Subject
+$publisherDisplayName = if ($env:MSIX_PUBLISHER_DISPLAY_NAME) { $env:MSIX_PUBLISHER_DISPLAY_NAME } else { $productName }
 
 Add-Type -AssemblyName System.Drawing
 $source = [System.Drawing.Image]::FromFile((Resolve-Path 'src-tauri/icons/128x128.png'))
@@ -42,7 +43,7 @@ $manifest = @"
   <Identity Name="$identifier" Publisher="$publisher" Version="$version.0" ProcessorArchitecture="x64"/>
   <Properties>
     <DisplayName>$productName</DisplayName>
-    <PublisherDisplayName>$productName</PublisherDisplayName>
+    <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <Description>$productName</Description>
   </Properties>

@@ -26,3 +26,11 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
   writeText: vi.fn(),
   readText: vi.fn(),
 }));
+
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openUrl: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: vi.fn().mockResolvedValue('9.9.9'),
+}));

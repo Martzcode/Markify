@@ -5,6 +5,18 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.08.4] - 2026-08-14
+
+### Ajouté
+
+- Lien vers le profil GitHub de l'éditeur dans la boîte **À propos** (« Martzcode » ouvre le navigateur).
+- Affichage automatique du numéro de version dans **À propos**, synchronisé avec la version réelle de l'application.
+- Identité d'éditeur du paquet MSIX alignée sur le compte Microsoft Store (`Martzcode`).
+
+### Corrigé
+
+- Le menu et les sous-menus restaient affichés après un clic sur une option : ils se ferment désormais après l'action.
+
 ## [2026.08.3] - 2026-08-14
 
 ### Ajouté

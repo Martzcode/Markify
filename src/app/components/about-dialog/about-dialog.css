@@ -69,6 +69,12 @@
 .about-developer-name {
   font-weight: 600;
   color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.about-developer-name:hover {
+  text-decoration: underline;
 }
 
 .about-close {

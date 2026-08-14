@@ -8,11 +8,17 @@
   >
     <img src="app-icon.png" alt="" class="about-icon" draggable="false" />
     <h2 class="about-name">{{ i18n.t('app.name') }}</h2>
-    <p class="about-version">{{ i18n.t('about.version') }} {{ version }}</p>
+    <p class="about-version">{{ i18n.t('about.version') }} {{ version() }}</p>
     <p class="about-description">{{ i18n.t('about.description') }}</p>
     <div class="about-developer">
       <span class="about-developer-label">{{ i18n.t('about.developedBy') }}</span>
-      <span class="about-developer-name">{{ developer }}</span>
+      <a
+        class="about-developer-name"
+        href="{{ profile }}"
+        title="{{ profile }}"
+        (click)="openProfile($event)"
+        >{{ developer }}</a
+      >
     </div>
     <button type="button" class="about-close" (click)="about.close()">
       {{ i18n.t('about.close') }}

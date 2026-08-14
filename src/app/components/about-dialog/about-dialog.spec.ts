@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { AboutDialog, APP_DEVELOPER } from './about-dialog';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { AboutDialog, APP_DEVELOPER, APP_PROFILE } from './about-dialog';
 import { AboutDialogService } from '../../services/about-dialog.service';
 
 describe('AboutDialog', () => {
@@ -20,6 +21,27 @@ describe('AboutDialog', () => {
     const name = fixture.nativeElement.querySelector('.about-developer-name');
     expect(name.textContent).toContain(APP_DEVELOPER);
     expect(name.textContent).toContain('Martzcode');
+  });
+
+  it('displays the app version', async () => {
+    const fixture = TestBed.createComponent(AboutDialog);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const version = fixture.nativeElement.querySelector('.about-version');
+    expect(version.textContent).toContain('9.9.9');
+  });
+
+  it('opens the developer profile on click', () => {
+    const fixture = TestBed.createComponent(AboutDialog);
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('.about-developer-name');
+    expect(link.getAttribute('href')).toBe(APP_PROFILE);
+    link.click();
+
+    expect(openUrl).toHaveBeenCalledWith(APP_PROFILE);
   });
 
   it('closes when the close button is clicked', () => {

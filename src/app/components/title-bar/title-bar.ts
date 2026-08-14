@@ -202,7 +202,8 @@ export class TitleBar implements OnDestroy {
     }
   }
 
-  protected runItem(item: TitleBarMenuItem): void {
+  protected runItem(event: MouseEvent, item: TitleBarMenuItem): void {
+    event.stopPropagation();
     this.openMenu.set(null);
     this.openSubmenu.set(null);
     if (!item.disabled) {

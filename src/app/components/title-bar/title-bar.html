@@ -37,31 +37,31 @@
                       <span class="menu-shortcut">{{ item.shortcut }}</span>
                     }
                     <span class="menu-arrow">▸</span>
-@if (openSubmenu() === item.label) {
-                    <div class="menu-dropdown menu-dropdown-sub">
-                      @for (subItem of item.submenu.items; track subItem.label) {
-                        <button
-                          type="button"
-                          class="menu-item"
-                          [disabled]="subItem.disabled"
-                          (click)="runItem(subItem)"
-                          [class.menu-item-radio]="subItem.checked !== undefined"
-                        >
-                          <span class="menu-item-text">{{ subItem.label }}</span>
-                          @if (subItem.checked) {
-                            <span class="menu-check">✓</span>
-                          }
-                        </button>
-                      }
-                    </div>
-                  }
+                    @if (openSubmenu() === item.label) {
+                      <div class="menu-dropdown menu-dropdown-sub">
+                        @for (subItem of item.submenu.items; track subItem.label) {
+                          <button
+                            type="button"
+                            class="menu-item"
+                            [disabled]="subItem.disabled"
+                            (click)="runItem($event, subItem)"
+                            [class.menu-item-radio]="subItem.checked !== undefined"
+                          >
+                            <span class="menu-item-text">{{ subItem.label }}</span>
+                            @if (subItem.checked) {
+                              <span class="menu-check">✓</span>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
                   </div>
                 } @else {
                   <button
                     type="button"
                     class="menu-item"
                     [disabled]="item.disabled"
-                    (click)="runItem(item)"
+                    (click)="runItem($event, item)"
                     [class.menu-item-radio]="item.checked !== undefined"
                   >
                     <span class="menu-item-text">{{ item.label }}</span>
@@ -82,64 +82,49 @@
   </div>
   @if (!isMac) {
     <div class="titlebar-right">
-    <button
-      type="button"
-      class="win-btn"
-      title="Minimize"
-      (click)="onMinimize()"
-    >
-      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-        <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
-      </svg>
-    </button>
-    <button
-      type="button"
-      class="win-btn"
-      [attr.title]="isMaximized() ? 'Restore' : 'Maximize'"
-      (click)="onToggleMaximize()"
-    >
-      @if (isMaximized()) {
+      <button type="button" class="win-btn" title="Minimize" (click)="onMinimize()">
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <rect
-            x="0.5"
-            y="2.5"
-            width="7"
-            height="7"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1"
-          />
-          <path
-            d="M2.5 2.5v-2h7v7h-2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1"
-          />
+          <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
         </svg>
-      } @else {
+      </button>
+      <button
+        type="button"
+        class="win-btn"
+        [attr.title]="isMaximized() ? 'Restore' : 'Maximize'"
+        (click)="onToggleMaximize()"
+      >
+        @if (isMaximized()) {
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+            <rect
+              x="0.5"
+              y="2.5"
+              width="7"
+              height="7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+            />
+            <path d="M2.5 2.5v-2h7v7h-2" fill="none" stroke="currentColor" stroke-width="1" />
+          </svg>
+        } @else {
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+            <rect
+              x="0.5"
+              y="0.5"
+              width="9"
+              height="9"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+            />
+          </svg>
+        }
+      </button>
+      <button type="button" class="win-btn win-close" title="Close" (click)="onClose()">
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <rect
-            x="0.5"
-            y="0.5"
-            width="9"
-            height="9"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1"
-          />
+          <path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.1" />
         </svg>
-      }
-    </button>
-    <button
-      type="button"
-      class="win-btn win-close"
-      title="Close"
-      (click)="onClose()"
-    >
-      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-        <path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.1" />
-      </svg>
-    </button>
+      </button>
     </div>
   }
 </header>

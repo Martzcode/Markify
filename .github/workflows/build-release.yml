@@ -143,6 +143,7 @@ jobs:
         env:
           MSIX_PFX_BASE64: ${{ secrets.MSIX_PFX_BASE64 }}
           MSIX_PFX_PASSWORD: ${{ secrets.MSIX_PFX_PASSWORD }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME || 'Martzcode' }}
         run: .github/scripts/build-msix.ps1
 
       - name: Upload artifacts
@@ -171,3 +172,5 @@ jobs:
         run: |
           cd artifacts
           gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' -o -name '*.msix' \))
+          gh release view "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --json body --jq .body | sed 's|^\*\*Full Changelog\*\*.*|**Changelog** : https://github.com/'"${GITHUB_REPOSITORY}"'/blob/main/CHANGELOG.md|' > notes.md
+          gh release edit "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --notes-file notes.md
