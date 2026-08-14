@@ -36,7 +36,7 @@ jobs:
             YM="${YEAR}.${MONTH}"
             N=""
             for i in 1 2 3 4 5; do
-              LAST="$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${YM}." --jq -r '.[].ref' 2>/dev/null || true)"
+              LAST="$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${YM}." --jq '.[].ref' 2>/dev/null || true)"
               LAST="$(printf '%s\n' "$LAST" | sed 's|refs/tags/||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
               if [ -n "$LAST" ]; then
                 N="$((${LAST##*.} + 1))"
@@ -134,6 +134,18 @@ jobs:
         run: |
           for f in src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi; do
             mv "$f" "$(echo "$f" | sed -E 's/_[A-Za-z]{2}-[A-Za-z]{2}\.msi$/.msi/')"
+          done
+
+      - name: Build Microsoft Store MSI
+        if: matrix.name == 'windows'
+        run: npm run tauri bundle -- --config src-tauri/tauri.microsoftstore.conf.json --bundles msi --ci
+
+      - name: Rename Microsoft Store MSI
+        if: matrix.name == 'windows'
+        shell: bash
+        run: |
+          for f in src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*_??-??.msi; do
+            mv "$f" "$(echo "$f" | sed -E 's/_[A-Za-z]{2}-[A-Za-z]{2}\.msi$/-store.msi/')"
           done
 
       - name: Upload artifacts

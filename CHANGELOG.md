@@ -5,13 +5,14 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [Non publié]
+## [2026.08.2] - 2026-08-14
 
 ### Ajouté
 
 - Export PDF complet depuis le menu **Fichier → Exporter…** (raccourci `Ctrl/Cmd+E`), avec dialogue d'enregistrement et nom de fichier par défaut basé sur le document ouvert.
 - Intégration des images distantes et locales dans les PDF exportés, redimensionnées à la largeur du contenu (comme dans l'aperçu).
 - Utilisation d'une police système adaptée au contenu du document pour les PDF exportés (symboles Unicode rendus correctement).
+- MSI prêt pour le Microsoft Store (`-store.msi`, mode offline installer avec WebView2 embarqué).
 
 ### Corrigé
 
