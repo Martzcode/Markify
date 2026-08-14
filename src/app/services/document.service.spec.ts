@@ -20,6 +20,7 @@ describe('DocumentService', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('opens a markdown file and switches to read mode', async () => {
@@ -128,6 +129,120 @@ describe('DocumentService', () => {
     await service.saveFile();
 
     expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('exports the content as a pdf file', async () => {
+    let pdfContent: Uint8Array | undefined;
+    vi.mocked(save).mockResolvedValue('/tmp/out.pdf');
+    vi.mocked(invoke).mockImplementation(async (command: string, args?: unknown) => {
+      if (command === 'write_pdf_file') {
+        pdfContent = (args as { content?: unknown } | undefined)?.content as Uint8Array | undefined;
+      }
+      return undefined;
+    });
+    service.isOpen.set(true);
+    service.setContent('# Hello\n\nSome *text* here.');
+
+    await service.exportPdf();
+
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultPath: 'untitled.pdf',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+      }),
+    );
+    expect(invoke).toHaveBeenCalledWith(
+      'write_pdf_file',
+      expect.objectContaining({ path: '/tmp/out.pdf' }),
+    );
+    expect(pdfContent).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(pdfContent!.slice(0, 4))).toBe('%PDF');
+    expect(toast.message()).toBe('PDF exported');
+  });
+
+  it('uses the document filename as the default export name', async () => {
+    vi.mocked(save).mockResolvedValue('/tmp/guide.pdf');
+    vi.mocked(invoke).mockResolvedValue(undefined);
+    service.isOpen.set(true);
+    service.filePath.set('/some/dir/my-doc.md');
+    service.setContent('body');
+
+    await service.exportPdf();
+
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: 'my-doc.pdf' }));
+  });
+
+  it('exports a document with a data-url image', async () => {
+    let pdfContent: Uint8Array | undefined;
+    const png =
+      'data:image/png;base64,' +
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    vi.mocked(save).mockResolvedValue('/tmp/with-image.pdf');
+    vi.mocked(invoke).mockImplementation(async (command: string, args?: unknown) => {
+      if (command === 'write_pdf_file') {
+        pdfContent = (args as { content?: unknown } | undefined)?.content as Uint8Array | undefined;
+      }
+      return undefined;
+    });
+    service.isOpen.set(true);
+    service.setContent(`# Hello\n\n![logo](${png})`);
+
+    await service.exportPdf();
+
+    expect(pdfContent).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(pdfContent!.slice(0, 4))).toBe('%PDF');
+    expect(service.error()).toBeNull();
+  });
+
+  it('skips an image that cannot be fetched and warns the user', async () => {
+    let pdfContent: Uint8Array | undefined;
+    vi.mocked(save).mockResolvedValue('/tmp/skipped.pdf');
+    vi.mocked(invoke).mockImplementation(async (command: string, args?: unknown) => {
+      if (command === 'write_pdf_file') {
+        pdfContent = (args as { content?: unknown } | undefined)?.content as Uint8Array | undefined;
+      }
+      return undefined;
+    });
+    service.isOpen.set(true);
+    service.setContent(
+      '# Hello\n\n![broken](https://example.org/broken.png)\n\n![ok](https://example.org/ok.png)',
+    );
+
+    await service.exportPdf();
+
+    expect(pdfContent).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(pdfContent!.slice(0, 4))).toBe('%PDF');
+    expect(service.error()).toBeNull();
+    expect(toast.message()).toBe('PDF exported, 2 image(s) missing');
+  });
+
+  it('does nothing when exporting without an open document', async () => {
+    await service.exportPdf();
+
+    expect(save).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when the export dialog is cancelled', async () => {
+    vi.mocked(save).mockImplementation(() => Promise.resolve(null));
+    service.isOpen.set(true);
+    service.setContent('# Hello');
+
+    await service.exportPdf();
+
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('reports an error when the pdf cannot be written', async () => {
+    vi.mocked(save).mockResolvedValue('/tmp/out.pdf');
+    vi.mocked(invoke).mockRejectedValue(new Error('disk full'));
+    service.isOpen.set(true);
+    service.setContent('# Hello');
+
+    await service.exportPdf();
+
+    expect(service.error()).toContain('disk full');
+    expect(toast.message()).toBeNull();
   });
 
   it('shows a toast when an existing file is saved', async () => {

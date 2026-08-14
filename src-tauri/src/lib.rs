@@ -8,6 +8,18 @@ fn write_markdown_file(path: String, content: String) -> Result<(), String> {
   std::fs::write(&path, content).map_err(|err| err.to_string())
 }
 
+#[tauri::command]
+fn write_pdf_file(path: String, content: Vec<u8>) -> Result<(), String> {
+  std::fs::write(&path, content).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn read_image_base64(path: String) -> Result<String, String> {
+  use base64::Engine;
+  let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
+  Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let context = tauri::generate_context!();
@@ -23,7 +35,13 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
-    .invoke_handler(tauri::generate_handler![read_markdown_file, write_markdown_file])
+    .plugin(tauri_plugin_http::init())
+    .invoke_handler(tauri::generate_handler![
+      read_markdown_file,
+      write_markdown_file,
+      write_pdf_file,
+      read_image_base64
+    ])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

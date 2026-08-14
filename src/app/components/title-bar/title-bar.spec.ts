@@ -13,7 +13,9 @@ describe('TitleBar', () => {
   });
 
   it('view menu contains a mode submenu with all modes', () => {
-    const viewMenu = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus()[2];
+    const viewMenu = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2];
     const modeItem = viewMenu.items.find((item) => item.submenu);
     expect(modeItem).toBeDefined();
 
@@ -32,5 +34,13 @@ describe('TitleBar', () => {
     expect(editMenu.items[2].disabled).toBe(true);
     expect(editMenu.items[3].disabled).toBe(true);
     expect(editMenu.items[4].disabled).toBe(true);
+  });
+
+  it('file menu contains an export item disabled while no document is open', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const fileMenu = menus[0];
+    const exportItem = fileMenu.items.find((item) => item.shortcut?.endsWith('E'));
+    expect(exportItem).toBeDefined();
+    expect(exportItem!.disabled).toBe(true);
   });
 });

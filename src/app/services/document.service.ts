@@ -5,6 +5,8 @@ import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { I18nService } from '../i18n/i18n.service';
 import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
+import { generatePdf } from '../utils/pdf-export';
+import { renderMarkdownPlain } from '../utils/markdown-render';
 
 export type EditorMode = 'read' | 'edit' | 'hybrid';
 
@@ -83,6 +85,36 @@ export class DocumentService {
       this.isDirty.set(false);
       if (existingPath) {
         this.toast.show(this.i18n.t('toast.saved'));
+      }
+    } catch (err) {
+      this.error.set(String(err));
+    }
+  }
+
+  async exportPdf(): Promise<void> {
+    this.error.set(null);
+    if (!this.isOpen()) {
+      return;
+    }
+    const path = await save({
+      title: this.i18n.t('dialog.export.title'),
+      defaultPath: this.exportDefaultName() + '.pdf',
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+    if (!path) {
+      return;
+    }
+    try {
+      const result = await generatePdf(renderMarkdownPlain(this.content()), this.documentDir());
+      await invoke('write_pdf_file', { path, content: result.bytes });
+      if (result.skippedImages.length > 0) {
+        this.toast.show(
+          this.i18n.t('toast.exportedImagesSkipped', {
+            count: String(result.skippedImages.length),
+          }),
+        );
+      } else {
+        this.toast.show(this.i18n.t('toast.exported'));
       }
     } catch (err) {
       this.error.set(String(err));
@@ -185,11 +217,7 @@ export class DocumentService {
     this.lastEditAt = null;
   }
 
-  private restoreSelection(
-    textarea: HTMLTextAreaElement,
-    start: number,
-    end: number,
-  ): void {
+  private restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number): void {
     setTimeout(() => {
       try {
         textarea.setSelectionRange(start, end);
@@ -201,6 +229,27 @@ export class DocumentService {
 
   setMode(mode: EditorMode): void {
     this.mode.set(mode);
+  }
+
+  private exportDefaultName(): string {
+    const filePath = this.filePath();
+    if (filePath) {
+      const base = filePath.split(/[\\/]/).pop() ?? '';
+      const name = base.replace(/\.(md|markdown|mdx)$/i, '');
+      if (name) {
+        return name;
+      }
+    }
+    return this.i18n.t('dialog.export.defaultName');
+  }
+
+  private documentDir(): string | null {
+    const path = this.filePath();
+    if (!path) {
+      return null;
+    }
+    const index = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+    return index === -1 ? null : path.slice(0, index);
   }
 
   toggleMode(): void {

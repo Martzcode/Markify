@@ -51,6 +51,13 @@ describe('KeyboardShortcutsService', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('exports a pdf with Ctrl+E', () => {
+    const spy = vi.spyOn(documentService, 'exportPdf').mockResolvedValue();
+
+    expect(keydown('e', { ctrlKey: true })).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   it('undoes with Ctrl+Z', () => {
     const spy = vi.spyOn(documentService, 'undo');
 

@@ -36,6 +36,10 @@ export class KeyboardShortcutsService implements OnDestroy {
           event.preventDefault();
           this.document.saveFile();
           return;
+        case 'e':
+          event.preventDefault();
+          this.document.exportPdf();
+          return;
         case 'z':
           event.preventDefault();
           if (event.shiftKey) {

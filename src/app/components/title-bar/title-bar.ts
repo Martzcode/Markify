@@ -68,6 +68,12 @@ export class TitleBar implements OnDestroy {
           shortcut: `${this.modKey}S`,
           action: () => this.document.saveFile(),
         },
+        {
+          label: this.i18n.t('menu.file.export'),
+          shortcut: `${this.modKey}E`,
+          disabled: !this.document.isOpen(),
+          action: () => this.document.exportPdf(),
+        },
         { label: this.i18n.t('menu.file.exit'), action: () => this.win.close() },
       ],
     },

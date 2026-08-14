@@ -28,6 +28,8 @@ const parser = new Marked({
   },
 });
 
+const plainParser = new Marked({ gfm: true, async: false });
+
 export const CODE_BLOCK_RENDER_PLACEHOLDER = '__MARKIFY_COPY_LABEL__';
 
 export function renderMarkdown(content: string, copyLabel: string): string {
@@ -37,4 +39,11 @@ export function renderMarkdown(content: string, copyLabel: string): string {
   const escapedLabel = escapeHtml(copyLabel);
   const html = parser.parse(content) as string;
   return html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel);
+}
+
+export function renderMarkdownPlain(content: string): string {
+  if (!content) {
+    return '';
+  }
+  return plainParser.parse(content) as string;
 }
