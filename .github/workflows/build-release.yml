@@ -138,7 +138,7 @@ jobs:
 
       - name: Build Microsoft Store MSI
         if: matrix.name == 'windows'
-        run: npm run tauri bundle -- --config src-tauri/tauri.microsoftstore.conf.json --bundles msi --ci
+        run: npm run tauri bundle -- --config src-tauri/tauri.microsoftstore.conf.json --bundles msi --target x86_64-pc-windows-msvc --ci
 
       - name: Rename Microsoft Store MSI
         if: matrix.name == 'windows'
