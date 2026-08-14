@@ -72,6 +72,7 @@ jobs:
             artifact_paths: |
               src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
               src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msix/*.msix
           - name: macos
             platform: macos-latest
             bundles: dmg
@@ -136,17 +137,14 @@ jobs:
             mv "$f" "$(echo "$f" | sed -E 's/_[A-Za-z]{2}-[A-Za-z]{2}\.msi$/.msi/')"
           done
 
-      - name: Build Microsoft Store MSI
+      - name: Build MSIX package
         if: matrix.name == 'windows'
-        run: npm run tauri bundle -- --config src-tauri/tauri.microsoftstore.conf.json --bundles msi --target x86_64-pc-windows-msvc --ci
-
-      - name: Rename Microsoft Store MSI
-        if: matrix.name == 'windows'
-        shell: bash
-        run: |
-          for f in src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*_??-??.msi; do
-            mv "$f" "$(echo "$f" | sed -E 's/_[A-Za-z]{2}-[A-Za-z]{2}\.msi$/-store.msi/')"
-          done
+        shell: powershell
+        env:
+          MSIX_PFX_BASE64: ${{ secrets.MSIX_PFX_BASE64 }}
+          MSIX_PFX_PASSWORD: ${{ secrets.MSIX_PFX_PASSWORD }}
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+        run: .github/scripts/build-msix.ps1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -173,4 +171,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd artifacts
-          gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' \))
+          gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' -o -name '*.msix' \))

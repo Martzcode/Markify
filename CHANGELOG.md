@@ -5,6 +5,16 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.08.3] - 2026-08-14
+
+### Ajouté
+
+- Paquet MSIX x64 (`Markify_2026.8.3_x64.msix`) généré et signé en CI (auto-signé par défaut, ou avec le PFX fourni en secret).
+
+### Retiré
+
+- Paquet MSI dédié au Microsoft Store des artefacts de release (le MSIX le remplace).
+
 ## [2026.08.2] - 2026-08-14
 
 ### Ajouté
@@ -12,7 +22,6 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Export PDF complet depuis le menu **Fichier → Exporter…** (raccourci `Ctrl/Cmd+E`), avec dialogue d'enregistrement et nom de fichier par défaut basé sur le document ouvert.
 - Intégration des images distantes et locales dans les PDF exportés, redimensionnées à la largeur du contenu (comme dans l'aperçu).
 - Utilisation d'une police système adaptée au contenu du document pour les PDF exportés (symboles Unicode rendus correctement).
-- MSI prêt pour le Microsoft Store (`-store.msi`, mode offline installer avec WebView2 embarqué).
 
 ### Corrigé
 
