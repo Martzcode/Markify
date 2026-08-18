@@ -539,6 +539,7 @@ fn disable_pinch_zoom(app: &tauri::App) {
 fn disable_pinch_zoom(app: &tauri::App) {
   use tauri::Manager;
   use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings5;
+  use windows_core::Interface;
 
   let Some(window) = app.get_webview_window("main") else {
     return;
