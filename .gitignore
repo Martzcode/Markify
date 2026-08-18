@@ -39,6 +39,9 @@ testem.log
 /typings
 __screenshots__/
 
+# Microsoft Store listing
+/store-listing/
+
 # System files
 .DS_Store
 Thumbs.db

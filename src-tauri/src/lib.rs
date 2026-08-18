@@ -492,6 +492,8 @@ pub fn run() {
       read_system_fonts
     ])
     .setup(|app| {
+      #[cfg(any(target_os = "linux", target_os = "windows"))]
+      disable_pinch_zoom(app);
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()
@@ -503,4 +505,53 @@ pub fn run() {
     })
     .run(context)
     .expect("error while running tauri application");
+}
+
+// On Linux, the pinch-to-zoom gesture is handled natively by WebKitGTK (it
+// never reaches the web content, so CSS/JS cannot block it). WebKit stores
+// its internal zoom gesture (a GtkGestureZoom) on the WebView widget under
+// the "wk-view-zoom-gesture" qdata; destroying its signal handlers disables
+// the gesture. See WebKitWebViewBase.cpp in the WebKit source.
+#[cfg(target_os = "linux")]
+fn disable_pinch_zoom(app: &tauri::App) {
+  use tauri::Manager;
+
+  let Some(window) = app.get_webview_window("main") else {
+    return;
+  };
+  window
+    .with_webview(|webview| {
+      use gtk::glib::prelude::*;
+      unsafe {
+        if let Some(gesture) = webview.inner().data::<gobject_sys::GObject>("wk-view-zoom-gesture") {
+          gobject_sys::g_signal_handlers_destroy(gesture.as_ptr());
+        }
+      }
+    })
+    .expect("failed to disable pinch zoom");
+}
+
+// On Windows, pinch-to-zoom is handled natively by WebView2 (Chromium) and
+// does not always reach the web content. Disable it through the WebView2
+// settings, falling back to the web-side guards (CSS/JS) if the runtime is
+// too old to expose ICoreWebView2Settings5.
+#[cfg(target_os = "windows")]
+fn disable_pinch_zoom(app: &tauri::App) {
+  use tauri::Manager;
+  use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings5;
+
+  let Some(window) = app.get_webview_window("main") else {
+    return;
+  };
+  window
+    .with_webview(|webview| unsafe {
+      if let Ok(core) = webview.controller().CoreWebView2() {
+        if let Ok(settings) = core.Settings() {
+          if let Ok(settings5) = settings.cast::<ICoreWebView2Settings5>() {
+            let _ = settings5.SetIsPinchZoomEnabled(false);
+          }
+        }
+      }
+    })
+    .expect("failed to disable pinch zoom");
 }
