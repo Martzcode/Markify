@@ -6,9 +6,9 @@
 
 🇬🇧 [English](#english) · 🇫🇷 [Français](#français)
 
-**Markify** is a desktop application for writing and reading Markdown documents, available on **Windows, macOS and Linux**. It combines a modern Angular frontend with a lightweight Rust backend, a custom VS Code-style interface, and full localization.
+**Markify** is a desktop application for writing and reading Markdown documents, available on **Windows, macOS and Linux**. It combines a modern Angular frontend with a lightweight Rust backend, a custom interface, and full localization.
 
-_Markify est une application de bureau pour écrire et lire des documents Markdown, disponible sur **Windows, macOS et Linux**. Elle associe un frontend Angular moderne à un backend Rust léger, une interface personnalisée inspirée de VS Code et une localisation complète._
+_Markify est une application de bureau pour écrire et lire des documents Markdown, disponible sur **Windows, macOS et Linux**. Elle associe un frontend Angular moderne à un backend Rust léger, une interface personnalisée et une localisation complète._
 
 ---
 
@@ -17,7 +17,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 ### Why this project stands out
 
 - **Full-stack desktop development**: Angular (TypeScript) frontend + Rust backend communicating through Tauri commands
-- **UI/UX craft**: custom title bar inspired by VS Code, adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
+- **UI/UX craft**: custom title bar adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
 - **Internationalization**: UI fully translated into 4 languages (French, English, German, Spanish), automatic detection of the system language, persisted choice, type-safe translations verified at compile time
 - **Theming**: light/dark themes that follow the system preference in real time, through a CSS design-token system
 - **Software engineering practices**: service architecture with Angular Signals, unit testing (82 tests, Vitest), Tauri capability permissions model
@@ -31,7 +31,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **4 languages**: Français, English, Deutsch, Español
 - **Light & dark themes** following the system
 - Save confirmation notifications (toast)
-- **Custom title bar** (VS Code style) with menus, submenus and window controls — native traffic lights on macOS, custom controls on Windows/Linux
+- **Custom title bar** with menus, submenus and window controls — native traffic lights on macOS, custom controls on Windows/Linux
 - **About dialog**: real-time app version, clickable developer profile (opens in the system browser)
 
 ### Tech stack
@@ -98,7 +98,7 @@ AGPL-3.0
 ### Ce qui rend ce projet intéressant
 
 - **Développement desktop full-stack** : frontend Angular (TypeScript) + backend Rust communiquant via des commandes Tauri
-- **Soin de l'UI/UX** : barre de titre personnalisée inspirée de VS Code, adaptée à chaque plateforme (traffic lights natifs sur macOS, contrôles de fenêtre personnalisés ailleurs), gestion du drag de la fenêtre, menus déroulants avec sous-menus
+- **Soin de l'UI/UX** : barre de titre personnalisée adaptée à chaque plateforme (traffic lights natifs sur macOS, contrôles de fenêtre personnalisés ailleurs), gestion du drag de la fenêtre, menus déroulants avec sous-menus
 - **Internationalisation** : interface entièrement traduite en 4 langues (français, anglais, allemand, espagnol), détection automatique de la langue du système, choix mémorisé, traductions typées vérifiées à la compilation
 - **Thème clair/sombre** : suit la préférence du système en temps réel, via un système de design tokens CSS
 - **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (82 tests, Vitest), modèle de permissions de Tauri
@@ -112,7 +112,7 @@ AGPL-3.0
 - **4 langues** : Français, English, Deutsch, Español
 - **Thèmes clair & sombre** suivant le système
 - Notifications de sauvegarde (toast)
-- **Barre de titre personnalisée** (style VS Code) avec menus, sous-menus et contrôles de fenêtre — traffic lights natifs sur macOS, contrôles personnalisés sur Windows/Linux
+- **Barre de titre personnalisée** avec menus, sous-menus et contrôles de fenêtre — traffic lights natifs sur macOS, contrôles personnalisés sur Windows/Linux
 - **Boîte À propos** : version de l'application en temps réel, profil de l'éditeur cliquable (ouvert dans le navigateur système)
 
 ### Technologies utilisées

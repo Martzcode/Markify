@@ -5,6 +5,28 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.08.8] - 2026-08-19
+
+### Amélioré
+
+- README : suppression des références à VS Code dans la description de l'interface (remplacées par une description neutre).
+
+## [2026.08.7] - 2026-08-18
+
+### Ajouté
+
+- Politique de confidentialité (`PRIVACY.md`).
+
+### Corrigé
+
+- Zoom par pincement (pinch-to-zoom) qui agrandissait/réduisait la page sous Linux (WebKitGTK) et Windows (WebView2) : le geste est désormais désactivé.
+
+## [2026.08.6] - 2026-08-14
+
+### Amélioré
+
+- README restructuré et complété : documentation bilingue (anglais/français), stack technique, architecture, démarrage rapide et section releases.
+
 ## [2026.08.5] - 2026-08-14
 
 ### Corrigé
