@@ -9,7 +9,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Amélioré
 
-- README : suppression des références à VS Code dans la description de l'interface (remplacées par une description neutre).
+- README : clarification de la description du projet.
 
 ## [2026.08.7] - 2026-08-18
 
