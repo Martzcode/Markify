@@ -5,6 +5,21 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.08.9] - 2026-08-20
+
+### Ajouté
+
+- Barre latérale (explorateur de fichiers) affichant l'arborescence complète du dossier ouvert : fichiers, sous-dossiers et fichiers des sous-dossiers, avec dépliage/pliement des dossiers (chargement à la demande, comme VS Code).
+- Menu **Fichier → Ouvrir un dossier…** (raccourci `Ctrl/Cmd+Shift+O`) pour choisir un dossier à explorer.
+- Affichage automatique de la barre latérale à l'ouverture d'un dossier ou d'un fichier (le dossier parent du fichier est alors chargé et le fichier est surligné).
+- Raccourci `Ctrl/Cmd+B` pour afficher ou masquer l'explorateur, complété par une icône en haut à gauche de la zone de contenu pour le réafficher quand il est masqué.
+- Bouton de fermeture dans l'en-tête de la barre latérale pour la masquer.
+- Barre de défilement visible dans l'arborescence lorsque la liste est trop longue.
+
+### Amélioré
+
+- Seuls les fichiers lisibles par l'application (`*.md`, `*.markdown`, `*.mdx`) sont affichés dans l'arborescence, les autres fichiers sont filtrés.
+
 ## [2026.08.8] - 2026-08-19
 
 ### Amélioré

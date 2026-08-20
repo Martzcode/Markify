@@ -2,11 +2,13 @@ import { Injectable, OnDestroy, inject } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
+import { ExplorerService } from './explorer.service';
 
 @Injectable({ providedIn: 'root' })
 export class KeyboardShortcutsService implements OnDestroy {
   private readonly document = inject(DocumentService);
   private readonly editorRef = inject(EditorRefService);
+  private readonly explorer = inject(ExplorerService);
   private readonly win = getCurrentWindow();
   private readonly onKeydown = (event: KeyboardEvent) => this.handleKeydown(event);
 
@@ -30,7 +32,15 @@ export class KeyboardShortcutsService implements OnDestroy {
           return;
         case 'o':
           event.preventDefault();
-          this.document.openFile();
+          if (event.shiftKey) {
+            this.explorer.openFolder();
+          } else {
+            this.document.openFile();
+          }
+          return;
+        case 'b':
+          event.preventDefault();
+          this.explorer.toggle();
           return;
         case 's':
           event.preventDefault();

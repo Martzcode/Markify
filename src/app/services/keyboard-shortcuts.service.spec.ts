@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { vi } from 'vitest';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
+import { ExplorerService } from './explorer.service';
 import { KeyboardShortcutsService } from './keyboard-shortcuts.service';
 
 describe('KeyboardShortcutsService', () => {
@@ -41,6 +42,22 @@ describe('KeyboardShortcutsService', () => {
     const spy = vi.spyOn(documentService, 'openFile').mockResolvedValue();
 
     expect(keydown('o', { ctrlKey: true })).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens a folder with Ctrl+Shift+O', () => {
+    const explorer = TestBed.inject(ExplorerService);
+    const spy = vi.spyOn(explorer, 'openFolder').mockResolvedValue();
+
+    expect(keydown('o', { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles the explorer with Ctrl+B', () => {
+    const explorer = TestBed.inject(ExplorerService);
+    const spy = vi.spyOn(explorer, 'toggle');
+
+    expect(keydown('b', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 

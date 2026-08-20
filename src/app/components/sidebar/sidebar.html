@@ -1,0 +1,28 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title" [title]="explorer.rootPath() ?? ''">
+      {{ explorer.rootName() }}
+    </span>
+    <button
+      type="button"
+      class="sidebar-hide"
+      [title]="i18n.t('menu.view.explorer')"
+      (click)="explorer.hide()"
+    >
+      <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M6.5 2l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.2" />
+      </svg>
+    </button>
+  </div>
+  @if (explorer.loading()) {
+    <div class="sidebar-status">{{ i18n.t('explorer.loading') }}</div>
+  } @else if (explorer.error(); as error) {
+    <div class="sidebar-status sidebar-error">{{ error }}</div>
+  } @else {
+    <div class="sidebar-tree">
+      @for (entry of explorer.rootEntries(); track entry.path) {
+        <app-explorer-node [entry]="entry" [depth]="0" />
+      }
+    </div>
+  }
+</aside>

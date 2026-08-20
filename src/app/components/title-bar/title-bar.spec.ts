@@ -43,4 +43,20 @@ describe('TitleBar', () => {
     expect(exportItem).toBeDefined();
     expect(exportItem!.disabled).toBe(true);
   });
+
+  it('file menu contains an open folder item', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const fileMenu = menus[0];
+    const openFolder = fileMenu.items.find((item) => item.shortcut?.endsWith('Shift+O'));
+    expect(openFolder).toBeDefined();
+    expect(openFolder!.label).toContain('Open Folder');
+  });
+
+  it('view menu contains a toggle explorer item', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const viewMenu = menus[2];
+    const item = viewMenu.items.find((entry) => entry.shortcut?.endsWith('B'));
+    expect(item).toBeDefined();
+    expect(item!.label).toContain('Explorer');
+  });
 });

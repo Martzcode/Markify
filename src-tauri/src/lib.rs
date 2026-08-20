@@ -3,6 +3,48 @@ fn read_markdown_file(path: String) -> Result<String, String> {
   std::fs::read_to_string(&path).map_err(|err| err.to_string())
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DirEntry {
+  name: String,
+  path: String,
+  is_dir: bool,
+  children: Vec<DirEntry>,
+}
+
+fn is_readable_markdown(name: &str) -> bool {
+  let lower = name.to_lowercase();
+  lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx")
+}
+
+#[tauri::command]
+fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
+  let read_dir = std::fs::read_dir(&path).map_err(|err| err.to_string())?;
+  let mut entries: Vec<DirEntry> = Vec::new();
+  for entry in read_dir.flatten() {
+    let Ok(file_type) = entry.file_type() else {
+      continue;
+    };
+    let name = entry.file_name().to_string_lossy().into_owned();
+    if !file_type.is_dir() && !is_readable_markdown(&name) {
+      continue;
+    }
+    let entry_path = entry.path().to_string_lossy().into_owned();
+    entries.push(DirEntry {
+      name,
+      path: entry_path,
+      is_dir: file_type.is_dir(),
+      children: Vec::new(),
+    });
+  }
+  entries.sort_by(|a, b| {
+    b.is_dir
+      .cmp(&a.is_dir)
+      .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+  });
+  Ok(entries)
+}
+
 #[tauri::command]
 fn write_markdown_file(path: String, content: String) -> Result<(), String> {
   std::fs::write(&path, content).map_err(|err| err.to_string())
@@ -465,6 +507,46 @@ mod tests {
   fn push_u64(bytes: &mut Vec<u8>, value: u64) {
     bytes.extend_from_slice(&value.to_be_bytes());
   }
+
+  #[test]
+  fn lists_directories_first_then_files_alphabetically() {
+    let dir = std::env::temp_dir().join(format!("markify-dir-test-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("b-folder")).unwrap();
+    std::fs::create_dir_all(dir.join("a-folder")).unwrap();
+    std::fs::write(dir.join("zebra.md"), "z").unwrap();
+    std::fs::write(dir.join("Apple.md"), "a").unwrap();
+    std::fs::write(dir.join("a-folder").join("nested.md"), "n").unwrap();
+
+    let entries = list_directory(dir.to_string_lossy().into_owned()).unwrap();
+
+    let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names, ["a-folder", "b-folder", "Apple.md", "zebra.md"]);
+    assert!(entries[0].is_dir);
+    assert!(entries[2].is_dir == false);
+    assert_eq!(entries[0].children.len(), 0);
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn filters_out_files_the_app_cannot_read() {
+    let dir = std::env::temp_dir().join(format!("markify-dir-filter-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("docs")).unwrap();
+    std::fs::write(dir.join("notes.txt"), "not md").unwrap();
+    std::fs::write(dir.join("readme.md"), "md").unwrap();
+    std::fs::write(dir.join("report.MD"), "upper").unwrap();
+    std::fs::write(dir.join("slides.mdx"), "mdx").unwrap();
+    std::fs::write(dir.join("draft.markdown"), "markdown").unwrap();
+    std::fs::write(dir.join("noext"), "noext").unwrap();
+
+    let entries = list_directory(dir.to_string_lossy().into_owned()).unwrap();
+
+    let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names, ["docs", "draft.markdown", "readme.md", "report.MD", "slides.mdx"]);
+    assert!(entries.iter().all(|e| e.is_dir || e.name.to_lowercase().ends_with(".md")
+      || e.name.to_lowercase().ends_with(".markdown")
+      || e.name.to_lowercase().ends_with(".mdx")));
+    std::fs::remove_dir_all(dir).unwrap();
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -489,7 +571,8 @@ pub fn run() {
       write_markdown_file,
       write_pdf_file,
       read_image_base64,
-      read_system_fonts
+      read_system_fonts,
+      list_directory
     ])
     .setup(|app| {
       #[cfg(any(target_os = "linux", target_os = "windows"))]

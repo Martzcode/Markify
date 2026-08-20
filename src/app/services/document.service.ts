@@ -52,6 +52,11 @@ export class DocumentService {
     if (typeof path !== 'string') {
       return;
     }
+    await this.openPath(path);
+  }
+
+  async openPath(path: string): Promise<void> {
+    this.error.set(null);
     try {
       const content = await invoke<string>('read_markdown_file', { path });
       this.content.set(content);

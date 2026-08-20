@@ -1,0 +1,155 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 220px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--menu-bg);
+  border-right: 1px solid var(--menu-border);
+  color: var(--menu-fg);
+  font-size: 13px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--menu-border);
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-hide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.sidebar-hide:hover {
+  background: var(--titlebar-hover-bg);
+  color: var(--menu-fg);
+}
+
+.sidebar-status {
+  padding: 12px 14px;
+  color: var(--text-secondary);
+}
+
+.sidebar-error {
+  color: var(--error-fg);
+}
+
+.sidebar-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--menu-border) transparent;
+}
+
+.sidebar-tree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-tree::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-tree::-webkit-scrollbar-thumb {
+  background: var(--menu-border);
+  border-radius: 4px;
+}
+
+.sidebar-tree::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 4px;
+  padding-right: 8px;
+  cursor: default;
+  white-space: nowrap;
+  color: var(--menu-fg);
+}
+
+.node:hover {
+  background: var(--titlebar-hover-bg);
+}
+
+.node-selected {
+  background: var(--menu-hover-bg);
+  color: #ffffff;
+}
+
+.node-caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.node-caret-empty {
+  width: 14px;
+}
+
+.node-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.node-icon-folder {
+  color: #dcb67a;
+}
+
+.node-selected .node-icon-folder {
+  color: #ffffff;
+}
+
+.node-icon-file {
+  color: var(--text-secondary);
+}
+
+.node-selected .node-icon-file {
+  color: #ffffff;
+}
+
+.node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

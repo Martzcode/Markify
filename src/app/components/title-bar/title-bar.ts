@@ -13,6 +13,7 @@ import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { AboutDialogService } from '../../services/about-dialog.service';
+import { ExplorerService } from '../../services/explorer.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -40,6 +41,7 @@ export class TitleBar implements OnDestroy {
   protected readonly document = inject(DocumentService);
   private readonly editorRef = inject(EditorRefService);
   private readonly aboutDialog = inject(AboutDialogService);
+  private readonly explorer = inject(ExplorerService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -47,6 +49,7 @@ export class TitleBar implements OnDestroy {
   protected readonly openSubmenu = signal<string | null>(null);
   protected readonly isMac = /Mac/i.test(navigator.userAgent);
   protected readonly modKey = this.isMac ? '⌘' : 'Ctrl+';
+  protected readonly shiftModKey = this.isMac ? '⇧⌘' : 'Ctrl+Shift+';
   protected readonly redoKey = this.isMac ? '⌘⇧Z' : 'Ctrl+Y';
 
   protected readonly menus = computed<TitleBarMenu[]>(() => [
@@ -62,6 +65,11 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.file.open'),
           shortcut: `${this.modKey}O`,
           action: () => this.document.openFile(),
+        },
+        {
+          label: this.i18n.t('menu.file.openFolder'),
+          shortcut: `${this.shiftModKey}O`,
+          action: () => this.explorer.openFolder(),
         },
         {
           label: this.i18n.t('menu.file.save'),
@@ -119,6 +127,11 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.view.fullscreen'),
           shortcut: 'F11',
           action: () => this.toggleFullScreen(),
+        },
+        {
+          label: this.i18n.t('menu.view.explorer'),
+          shortcut: `${this.modKey}B`,
+          action: () => this.explorer.toggle(),
         },
         {
           label: this.i18n.t('menu.view.mode'),

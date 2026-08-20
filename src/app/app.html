@@ -1,15 +1,35 @@
 <div class="app-shell">
   <app-title-bar />
   <main class="app-content">
-    <router-outlet />
-    @if (document.isOpen()) {
-      <app-editor-view />
-    } @else {
-      <div class="welcome">
-        <h1>{{ i18n.t('welcome.hello') }}</h1>
-        <p>{{ i18n.t('welcome.subtitle') }}</p>
-      </div>
+    @if (explorer.visible()) {
+      <app-sidebar />
     }
+    <div class="app-main">
+      @if (!explorer.visible()) {
+        <button
+          type="button"
+          class="explorer-toggle"
+          [title]="i18n.t('menu.view.explorer')"
+          (click)="explorer.show()"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M1.5 3.5c0-.55.45-1 1-1h3l1.5 1.5h6c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1h-10.5c-.55 0-1-.45-1-1z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+      }
+      <router-outlet />
+      @if (document.isOpen()) {
+        <app-editor-view />
+      } @else {
+        <div class="welcome">
+          <h1>{{ i18n.t('welcome.hello') }}</h1>
+          <p>{{ i18n.t('welcome.subtitle') }}</p>
+        </div>
+      }
+    </div>
   </main>
 
   @if (toast.message(); as message) {
