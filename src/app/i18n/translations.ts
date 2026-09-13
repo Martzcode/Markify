@@ -27,6 +27,7 @@ export const enTranslations = {
   'menu.view': 'View',
   'menu.view.fullscreen': 'Toggle Full Screen',
   'menu.view.explorer': 'Toggle Explorer',
+  'menu.view.toc': 'Toggle Table of Contents',
   'menu.view.mode': 'Mode',
   'menu.view.readMode': 'Read Mode',
   'menu.view.editMode': 'Edit Mode',
@@ -52,6 +53,8 @@ export const enTranslations = {
   'welcome.hello': 'Hello, Markify!',
   'welcome.subtitle': 'Your markdown editor is ready.',
   'explorer.loading': 'Loading…',
+  'toc.title': 'Contents',
+  'toc.empty': 'No headings yet',
 } as const;
 
 export type TranslationKey = keyof typeof enTranslations;
@@ -76,6 +79,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'menu.view': 'Affichage',
     'menu.view.fullscreen': 'Basculer en plein écran',
     'menu.view.explorer': 'Afficher/Masquer l’explorateur',
+    'menu.view.toc': 'Afficher/Masquer la table des matières',
     'menu.view.mode': 'Vue',
     'menu.view.readMode': 'Mode lecture',
     'menu.view.editMode': 'Mode édition',
@@ -101,6 +105,8 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'welcome.hello': 'Bonjour, Markify !',
     'welcome.subtitle': 'Votre éditeur Markdown est prêt.',
     'explorer.loading': 'Chargement…',
+    'toc.title': 'Sommaire',
+    'toc.empty': 'Aucun titre pour le moment',
   } satisfies Record<TranslationKey, string>,
   de: {
     'app.name': 'Markify',
@@ -120,6 +126,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'menu.view': 'Ansicht',
     'menu.view.fullscreen': 'Vollbild umschalten',
     'menu.view.explorer': 'Explorer ein-/ausblenden',
+    'menu.view.toc': 'Inhaltsverzeichnis ein-/ausblenden',
     'menu.view.mode': 'Modus',
     'menu.view.readMode': 'Lesemodus',
     'menu.view.editMode': 'Bearbeitungsmodus',
@@ -145,6 +152,8 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'welcome.hello': 'Hallo, Markify!',
     'welcome.subtitle': 'Ihr Markdown-Editor ist bereit.',
     'explorer.loading': 'Laden…',
+    'toc.title': 'Inhaltsverzeichnis',
+    'toc.empty': 'Noch keine Überschriften',
   } satisfies Record<TranslationKey, string>,
   es: {
     'app.name': 'Markify',
@@ -164,6 +173,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'menu.view': 'Ver',
     'menu.view.fullscreen': 'Alternar pantalla completa',
     'menu.view.explorer': 'Mostrar/ocultar explorador',
+    'menu.view.toc': 'Mostrar/ocultar tabla de contenidos',
     'menu.view.mode': 'Modo',
     'menu.view.readMode': 'Modo lectura',
     'menu.view.editMode': 'Modo edición',
@@ -189,5 +199,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<TranslationKey, string>>
     'welcome.hello': '¡Hola, Markify!',
     'welcome.subtitle': 'Tu editor de Markdown está listo.',
     'explorer.loading': 'Cargando…',
+    'toc.title': 'Contenido',
+    'toc.empty': 'Aún no hay títulos',
   } satisfies Record<TranslationKey, string>,
 };

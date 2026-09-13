@@ -9,9 +9,7 @@
       [title]="i18n.t('menu.view.explorer')"
       (click)="explorer.hide()"
     >
-      <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
-        <path d="M6.5 2l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.2" />
-      </svg>
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
     </button>
   </div>
   @if (explorer.loading()) {

@@ -83,9 +83,7 @@
   @if (!isMac) {
     <div class="titlebar-right">
       <button type="button" class="win-btn" title="Minimize" (click)="onMinimize()">
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
-        </svg>
+        <i class="fa-solid fa-window-minimize" aria-hidden="true"></i>
       </button>
       <button
         type="button"
@@ -94,36 +92,13 @@
         (click)="onToggleMaximize()"
       >
         @if (isMaximized()) {
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-            <rect
-              x="0.5"
-              y="2.5"
-              width="7"
-              height="7"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-            />
-            <path d="M2.5 2.5v-2h7v7h-2" fill="none" stroke="currentColor" stroke-width="1" />
-          </svg>
+          <i class="fa-solid fa-window-restore" aria-hidden="true"></i>
         } @else {
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-            <rect
-              x="0.5"
-              y="0.5"
-              width="9"
-              height="9"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-            />
-          </svg>
+          <i class="fa-solid fa-square" aria-hidden="true"></i>
         }
       </button>
       <button type="button" class="win-btn win-close" title="Close" (click)="onClose()">
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.1" />
-        </svg>
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
     </div>
   }

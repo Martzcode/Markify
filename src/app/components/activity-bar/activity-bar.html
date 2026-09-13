@@ -1,0 +1,22 @@
+<div class="activity-bar">
+  <nav class="activity-icons">
+    <button
+      type="button"
+      class="activity-icon"
+      [class.activity-icon-active]="explorer.visible()"
+      [title]="i18n.t('menu.view.explorer')"
+      (click)="explorer.toggle()"
+    >
+      <i class="fa-solid fa-folder-blank" aria-hidden="true"></i>
+    </button>
+    <button
+      type="button"
+      class="activity-icon"
+      [class.activity-icon-active]="toc.visible()"
+      [title]="i18n.t('menu.view.toc')"
+      (click)="toc.toggle()"
+    >
+      <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+    </button>
+  </nav>
+</div>

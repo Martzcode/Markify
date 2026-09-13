@@ -4,8 +4,15 @@
   height: 35px;
   background: var(--titlebar-bg);
   color: var(--titlebar-fg);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   font-size: 13px;
   user-select: none;
   -webkit-user-select: none;
@@ -191,7 +198,7 @@
   background: none;
   border: none;
   color: var(--menu-fg);
-  font: inherit;
+  font-size: 12px;
 }
 
 .win-btn:hover {

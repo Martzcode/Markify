@@ -1,7 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, Injector, computed, inject, signal } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { I18nService } from '../i18n/i18n.service';
+import { TocService } from './toc.service';
 
 export interface ExplorerEntry {
   name: string;
@@ -23,6 +24,7 @@ function parentDir(p: string): string | null {
 @Injectable({ providedIn: 'root' })
 export class ExplorerService {
   private readonly i18n = inject(I18nService);
+  private readonly injector = inject(Injector);
   private readonly childrenCache = new Map<string, ExplorerEntry[]>();
 
   readonly visible = signal(false);
@@ -100,7 +102,11 @@ export class ExplorerService {
   }
 
   toggle(): void {
-    this.visible.update((v) => !v);
+    const next = !this.visible();
+    if (next) {
+      this.closeToc();
+    }
+    this.visible.update(() => next);
   }
 
   hide(): void {
@@ -108,7 +114,12 @@ export class ExplorerService {
   }
 
   show(): void {
+    this.closeToc();
     this.visible.set(true);
+  }
+
+  private closeToc(): void {
+    this.injector.get(TocService, undefined, { optional: true })?.hide();
   }
 
   private async loadRoot(dir: string): Promise<void> {

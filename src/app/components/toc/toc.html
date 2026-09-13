@@ -1,0 +1,26 @@
+<aside class="toc">
+  <div class="toc-header">
+    <span class="toc-title">{{ i18n.t('toc.title') }}</span>
+    <button type="button" class="toc-hide" [title]="i18n.t('menu.view.toc')" (click)="toc.hide()">
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="toc-body">
+    @if (toc.entries().length > 0) {
+      @for (entry of toc.entries(); track entry.id) {
+        <button
+          type="button"
+          class="toc-item"
+          [class.toc-item-h1]="entry.level === 1"
+          [style.padding-left.px]="8 + (entry.level - 1) * 12"
+          [title]="entry.text"
+          (click)="toc.navigate(entry.id)"
+        >
+          <span class="toc-name">{{ entry.text }}</span>
+        </button>
+      }
+    } @else {
+      <div class="toc-empty">{{ i18n.t('toc.empty') }}</div>
+    }
+  </div>
+</aside>

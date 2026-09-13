@@ -178,6 +178,15 @@
   border-bottom: 1px solid var(--border);
 }
 
+:host ::ng-deep .markdown-body h1[id],
+:host ::ng-deep .markdown-body h2[id],
+:host ::ng-deep .markdown-body h3[id],
+:host ::ng-deep .markdown-body h4[id],
+:host ::ng-deep .markdown-body h5[id],
+:host ::ng-deep .markdown-body h6[id] {
+  scroll-margin-top: 8px;
+}
+
 :host ::ng-deep .markdown-body h2 {
   font-size: 1.5em;
   padding-bottom: 0.3em;

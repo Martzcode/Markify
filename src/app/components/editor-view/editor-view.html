@@ -21,6 +21,6 @@
     </div>
   }
   @if (document.mode() === 'read' || document.mode() === 'hybrid') {
-    <div class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>
+    <div #preview class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>
   }
 </div>

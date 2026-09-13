@@ -5,6 +5,23 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.09.1] - 2026-09-13
+
+### Ajouté
+
+- Table des matières dans une barre latérale : le contenu du document est listé sous forme de titres cliquables, avec indentation selon le niveau de titre (`H1`–`H6`).
+- Navigation depuis la table des matières : un clic sur un titre fait défiler l'aperçu (mode lecture) et/ou l'éditeur (mode édition/hybride) jusqu'à la section correspondante, avec synchronisation du surlignage dans l'éditeur.
+- Barre d'activités latérale (style VS Code) regroupant les boutons d'ouverture de l'explorateur de fichiers et de la table des matières, en remplacement du bouton flottant de l'explorateur.
+- Raccourci **Affichage → Afficher/Masquer la table des matières** dans les menus.
+- Identifiants (`id`) attribués aux titres du rendu Markdown, cohérents avec ceux de la table des matières.
+- Dépendance `@fortawesome/fontawesome-free` pour le jeu d'icônes de l'interface.
+
+### Amélioré
+
+- Exclusivité des panneaux latéraux : ouvrir l'explorateur ferme la table des matières (et inversement).
+- Iconographie remplacée par les pictogrammes Font Awesome (barre de titre sur Windows, contrôles d'arbres de l'explorateur, bouton de fermeture des panneaux).
+- Marge de défilement (`scroll-margin-top`) appliquée aux titres de l'aperçu pour que la cible de navigation ne soit pas recollée au bord supérieur.
+
 ## [2026.08.9] - 2026-08-20
 
 ### Ajouté

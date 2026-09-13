@@ -1,14 +1,54 @@
-import { Marked } from 'marked';
+import { Marked, type Tokens } from 'marked';
 import { escapeHtml } from './markdown-highlight';
 
 export interface CodeBlockRenderOptions {
   copyLabel: string;
 }
 
+export interface HeadingEntry {
+  id: string;
+  text: string;
+  level: number;
+  offset: number;
+}
+
+const slugCounts = new Map<string, number>();
+
+function nextHeadingId(raw: string): string {
+  const base =
+    raw
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/[\s-]+/g, '-') || 'section';
+  const count = slugCounts.get(base) ?? 0;
+  slugCounts.set(base, count + 1);
+  return count === 0 ? base : `${base}-${count}`;
+}
+
+function headingText(token: Tokens.Heading): string {
+  return (token.tokens ?? [])
+    .map((inline) => {
+      const t = inline as Tokens.Generic;
+      return typeof t['text'] === 'string' ? t['text'] : '';
+    })
+    .join('')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'");
+}
+
 const parser = new Marked({
   gfm: true,
   async: false,
   renderer: {
+    heading(token) {
+      return `<h${token.depth} id="${nextHeadingId(token.raw)}">${token.text}</h${token.depth}>`;
+    },
     code({ text, lang }) {
       const language = lang ? escapeHtml(lang) : '';
       return (
@@ -37,8 +77,34 @@ export function renderMarkdown(content: string, copyLabel: string): string {
     return '';
   }
   const escapedLabel = escapeHtml(copyLabel);
+  slugCounts.clear();
   const html = parser.parse(content) as string;
   return html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel);
+}
+
+export function extractHeadings(content: string): HeadingEntry[] {
+  if (!content) {
+    return [];
+  }
+  slugCounts.clear();
+  const headings: HeadingEntry[] = [];
+  let cursor = 0;
+  for (const token of parser.lexer(content)) {
+    if (token.type === 'heading') {
+      const heading = token as Tokens.Heading;
+      const offset = content.indexOf(heading.raw, cursor);
+      if (offset >= 0) {
+        cursor = offset + heading.raw.length;
+      }
+      headings.push({
+        id: nextHeadingId(heading.raw),
+        text: headingText(heading),
+        level: heading.depth,
+        offset,
+      });
+    }
+  }
+  return headings;
 }
 
 export function renderMarkdownPlain(content: string): string {

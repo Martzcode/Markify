@@ -16,31 +16,19 @@ import { I18nService } from '../../i18n/i18n.service';
       @if (entry().isDir) {
         <span class="node-caret">
           @if (expanded()) {
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" />
-            </svg>
+            <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
           } @else {
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M3.5 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.2" />
-            </svg>
+            <i class="fa-solid fa-caret-right" aria-hidden="true"></i>
           }
         </span>
         <span class="node-icon node-icon-folder">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              d="M1.5 3.5c0-.55.45-1 1-1h3l1.5 1.5h6c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1h-10.5c-.55 0-1-.45-1-1z"
-              fill="currentColor"
-            />
-          </svg>
+          <i class="fa-solid fa-folder-blank" aria-hidden="true"></i>
         </span>
         <span class="node-name">{{ entry().name }}</span>
       } @else {
         <span class="node-caret node-caret-empty"></span>
         <span class="node-icon node-icon-file">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M3 1.5h7l3 3v10H3z" fill="none" stroke="currentColor" />
-            <path d="M10 1.5v3h3" fill="none" stroke="currentColor" />
-          </svg>
+          <i class="fa-solid fa-file" aria-hidden="true"></i>
         </span>
         <span class="node-name">{{ entry().name }}</span>
       }
