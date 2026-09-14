@@ -49,6 +49,11 @@ const parser = new Marked({
     heading(token) {
       return `<h${token.depth} id="${nextHeadingId(token.raw)}">${token.text}</h${token.depth}>`;
     },
+    link(token: Tokens.Link) {
+      const href = token.href ?? '';
+      const text = this.parser.parseInline(token.tokens);
+      return `<a href="${escapeHtml(href)}" title="${escapeHtml(href)}">${text}</a>`;
+    },
     code({ text, lang }) {
       const language = lang ? escapeHtml(lang) : '';
       return (

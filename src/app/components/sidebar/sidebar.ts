@@ -6,10 +6,12 @@ import { I18nService } from '../../i18n/i18n.service';
 @Component({
   selector: 'app-explorer-node',
   imports: [ExplorerNode],
+  styleUrl: './explorer-node.css',
   template: `
     <div
       class="node"
       [class.node-selected]="selected()"
+      [title]="entry().name"
       [style.padding-left.px]="4 + depth() * 12"
       (click)="onClick()"
     >

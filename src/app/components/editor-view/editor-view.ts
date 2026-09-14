@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
@@ -132,9 +133,18 @@ export class EditorView {
 
   @HostListener('click', ['$event'])
   protected onPreviewClick(event: MouseEvent): void {
-    const copy = (event.target as HTMLElement).closest('.code-copy') as HTMLElement | null;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    const target = event.target as HTMLElement;
+    const copy = target.closest('.code-copy') as HTMLElement | null;
     if (copy) {
       this.copyCode(copy);
+      return;
+    }
+    const anchor = target.closest('a') as HTMLAnchorElement | null;
+    if (anchor && this.openLink(anchor)) {
+      event.preventDefault();
     }
   }
 
@@ -143,11 +153,27 @@ export class EditorView {
     if (event.key !== 'Enter' && event.key !== ' ') {
       return;
     }
-    const copy = (event.target as HTMLElement).closest('.code-copy') as HTMLElement | null;
+    const target = event.target as HTMLElement;
+    const copy = target.closest('.code-copy') as HTMLElement | null;
     if (copy) {
       event.preventDefault();
       this.copyCode(copy);
+      return;
     }
+    const anchor = target.closest('a') as HTMLAnchorElement | null;
+    if (anchor) {
+      event.preventDefault();
+      this.openLink(anchor);
+    }
+  }
+
+  private openLink(anchor: HTMLAnchorElement): boolean {
+    const href = anchor.getAttribute('href') ?? '';
+    if (!href || href.startsWith('#')) {
+      return false;
+    }
+    void openUrl(href).catch(() => {});
+    return true;
   }
 
   private copyCode(copy: HTMLElement): void {

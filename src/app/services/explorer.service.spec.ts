@@ -28,7 +28,7 @@ describe('ExplorerService', () => {
     expect(open).toHaveBeenCalledWith(expect.objectContaining({ directory: true }));
     expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/workspace' });
     expect(service.rootPath()).toBe('/workspace');
-    expect(service.visible()).toBe(true);
+    expect(service.visible()).toBe(false);
     expect(service.rootEntries()).toHaveLength(2);
     expect(service.expanded()).toEqual(new Set(['/workspace']));
   });
@@ -70,7 +70,7 @@ describe('ExplorerService', () => {
 
     expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/some/dir' });
     expect(service.rootPath()).toBe('/some/dir');
-    expect(service.visible()).toBe(true);
+    expect(service.visible()).toBe(false);
     expect(service.selectedPath()).toBe('/some/dir/doc.md');
   });
 

@@ -8,6 +8,7 @@
   position: relative;
   display: flex;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   background: var(--editor-bg);
   color: var(--editor-fg);
@@ -135,6 +136,7 @@
 
 .editor-preview {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: 24px 32px;
@@ -319,6 +321,10 @@
 }
 
 :host ::ng-deep .markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
   border-collapse: collapse;
   margin: 1em 0;
 }

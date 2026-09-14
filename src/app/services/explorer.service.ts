@@ -78,7 +78,6 @@ export class ExplorerService {
       this.selectedPath.set(path);
       return;
     }
-    this.visible.set(true);
     this.selectedPath.set(path);
     await this.expandAncestors(dir);
   }
@@ -124,7 +123,6 @@ export class ExplorerService {
 
   private async loadRoot(dir: string): Promise<void> {
     this.rootPath.set(dir);
-    this.visible.set(true);
     this.loading.set(true);
     this.error.set(null);
     this.selectedPath.set(null);

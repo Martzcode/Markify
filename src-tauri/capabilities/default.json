@@ -19,7 +19,7 @@
     "dialog:allow-save",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
-    "opener:allow-open-url",
+    "opener:default",
     "http:default",
     {
       "identifier": "http:allow-fetch",

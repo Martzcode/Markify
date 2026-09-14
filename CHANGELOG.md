@@ -5,6 +5,21 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.09.2] - 2026-09-14
+
+### Ajouté
+
+- Ouverture d'un lien de l'aperçu dans le navigateur par défaut du système au clic (au lieu d'une navigation dans la fenêtre de l'application), y compris au clavier (`Entrée`/`Espace`). Les ancres internes (`#titre`) continuent de faire défiler l'aperçu normalement.
+
+### Amélioré
+
+- Affichage de l'adresse complète d'un lien de l'aperçu dans une info-bulle lors du survol, ce qui permet de vérifier la destination avant de cliquer.
+
+### Corrigé
+
+- Aperçu tronqué sans barre de défilement pour les documents contenant de très larges blocs de code ou tableaux (contenu pouvant dépasser 3000 px) : la zone de lecture autorise désormais le défilement (horizontal et vertical) quelle que soit la largeur du contenu.
+- Tableaux Markdown trop larges qui débordaient de la fenêtre : ils sont maintenant scrollables à l'intérieur de l'aperçu.
+
 ## [2026.09.1] - 2026-09-13
 
 ### Ajouté

@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 4px;
+  padding-right: 8px;
+  cursor: default;
+  white-space: nowrap;
+  color: var(--menu-fg);
+}
+
+.node:hover {
+  background: var(--titlebar-hover-bg);
+}
+
+.node-selected {
+  background: var(--menu-hover-bg);
+  color: #ffffff;
+}
+
+.node-caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.node-caret-empty {
+  width: 14px;
+}
+
+.node-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.node-icon-folder {
+  color: #dcb67a;
+}
+
+.node-selected .node-icon-folder {
+  color: #ffffff;
+}
+
+.node-icon-file {
+  color: var(--text-secondary);
+}
+
+.node-selected .node-icon-file {
+  color: #ffffff;
+}
+
+.node-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

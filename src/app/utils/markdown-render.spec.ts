@@ -20,7 +20,17 @@ describe('renderMarkdown', () => {
   it('leaves plain markdown rendering intact', () => {
     const html = renderMarkdown('**bold** and [link](https://example.com)', 'Copy');
     expect(html).toContain('<strong>bold</strong>');
-    expect(html).toContain('href="https://example.com"');
+    expect(html).toContain('<a href="https://example.com" title="https://example.com">link</a>');
+  });
+
+  it('keeps inline formatting inside link text', () => {
+    const html = renderMarkdown('[**bold**](https://example.com)', 'Copy');
+    expect(html).toContain('<a href="https://example.com" title="https://example.com"><strong>bold</strong></a>');
+  });
+
+  it('escapes href and exposes it as the tooltip title', () => {
+    const html = renderMarkdown('[x](https://example.com/a?q=1&r=2)', 'Copy');
+    expect(html).toContain('title="https://example.com/a?q=1&amp;r=2"');
   });
 
   it('returns an empty string for empty content', () => {

@@ -10,6 +10,9 @@
     document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   </script>
   <script>
+    window.addEventListener('contextmenu', (event) => event.preventDefault());
+  </script>
+  <script>
     (() => {
       for (const type of ['gesturestart', 'gesturechange']) {
         document.addEventListener(type, (event) => event.preventDefault());

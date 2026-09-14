@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { DocumentService } from '../../services/document.service';
@@ -16,6 +17,7 @@ describe('EditorView', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   beforeEach(async () => {
@@ -158,5 +160,42 @@ describe('EditorView', () => {
 
     expect(first).toBe(0);
     expect(second).toBeGreaterThan(first);
+  });
+
+  it('opens external links in the system browser and prevents navigation', () => {
+    const fixture = createFixture('[site](https://example.com)', 'read');
+    const link = fixture.nativeElement.querySelector('a') as HTMLAnchorElement;
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(openUrl).toHaveBeenCalledWith('https://example.com');
+  });
+
+  it('opens external links on Enter key instead of navigating', () => {
+    const fixture = createFixture('[site](https://example.com)', 'read');
+    const link = fixture.nativeElement.querySelector('a') as HTMLAnchorElement;
+    link.focus();
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(openUrl).toHaveBeenCalledWith('https://example.com');
+  });
+
+  it('lets internal fragment links scroll without opening the browser', () => {
+    const fixture = createFixture('# Title\n\n[go](#title)', 'read');
+    const link = fixture.nativeElement.querySelector('a') as HTMLAnchorElement;
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(openUrl).not.toHaveBeenCalled();
+  });
+
+  it('does not double-open when a modifier key is held (plugin handles it)', () => {
+    const fixture = createFixture('[site](https://example.com)', 'read');
+    const link = fixture.nativeElement.querySelector('a') as HTMLAnchorElement;
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(openUrl).not.toHaveBeenCalled();
   });
 });
