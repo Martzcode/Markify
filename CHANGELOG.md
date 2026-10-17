@@ -5,6 +5,12 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.1] - 2026-10-17
+
+### Amélioré
+
+- Classement de l'application dans la catégorie « Bureautique » des menus d'applications Linux (fichier `.desktop` : `Categories=Office;`) au lieu de la catégorie « Autres ».
+
 ## [2026.09.2] - 2026-09-14
 
 ### Ajouté
