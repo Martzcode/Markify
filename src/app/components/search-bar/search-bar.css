@@ -1,0 +1,116 @@
+:host {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 20;
+}
+
+.search-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 380px;
+  max-width: calc(100vw - 48px);
+  padding: 8px;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  color: var(--menu-fg);
+}
+
+.search-row,
+.replace-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--editor-bg);
+  border: 1px solid var(--menu-border);
+  border-radius: 4px;
+  color: var(--editor-fg);
+  font: inherit;
+  font-size: 12px;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-count {
+  min-width: 58px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.search-count:empty {
+  display: none;
+}
+
+.search-icon-button,
+.search-text-button {
+  height: 26px;
+  padding: 0 7px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--menu-fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: default;
+}
+
+.search-icon-button:hover:not(:disabled),
+.search-text-button:hover:not(:disabled) {
+  background: var(--titlebar-hover-bg);
+}
+
+.search-icon-button:focus-visible,
+.search-text-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.search-icon-button:disabled,
+.search-text-button:disabled {
+  color: var(--menu-disabled-fg);
+}
+
+.search-toggle {
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.search-toggle-active {
+  background: var(--menu-hover-bg);
+  border-color: var(--accent);
+  color: var(--menu-hover-fg);
+}
+
+.search-close {
+  font-size: 11px;
+}
+
+.search-text-button {
+  border-color: var(--menu-border);
+  white-space: nowrap;
+}
+
+.search-error {
+  padding: 0 4px;
+  color: var(--error-border);
+  font-size: 11px;
+}

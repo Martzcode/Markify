@@ -14,6 +14,7 @@ import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { AboutDialogService } from '../../services/about-dialog.service';
 import { ExplorerService } from '../../services/explorer.service';
+import { SearchService } from '../../services/search.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -42,6 +43,7 @@ export class TitleBar implements OnDestroy {
   private readonly editorRef = inject(EditorRefService);
   private readonly aboutDialog = inject(AboutDialogService);
   private readonly explorer = inject(ExplorerService);
+  private readonly search = inject(SearchService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -139,6 +141,18 @@ export class TitleBar implements OnDestroy {
           shortcut: `${this.modKey}V`,
           disabled: !this.editorRef.textarea(),
           action: () => this.document.pasteFromClipboard(),
+        },
+        {
+          label: this.i18n.t('menu.edit.find'),
+          shortcut: `${this.modKey}F`,
+          disabled: !this.document.isOpen(),
+          action: () => this.search.open(false),
+        },
+        {
+          label: this.i18n.t('menu.edit.replace'),
+          shortcut: `${this.modKey}H`,
+          disabled: !this.document.isOpen(),
+          action: () => this.search.open(true),
         },
       ],
     },

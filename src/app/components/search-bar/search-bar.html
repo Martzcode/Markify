@@ -1,0 +1,124 @@
+<div class="search-bar" role="search" (keydown)="onKeydown($event)">
+  <div class="search-row">
+    <input
+      #searchInput
+      class="search-input"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      [value]="search.query()"
+      [placeholder]="i18n.t('search.placeholder')"
+      [attr.aria-label]="i18n.t('search.placeholder')"
+      (input)="onQuery($event)"
+    />
+    <span class="search-count" aria-live="polite">{{ counter() }}</span>
+    <button
+      type="button"
+      class="search-icon-button"
+      [disabled]="search.total() === 0"
+      [title]="i18n.t('search.previous')"
+      [attr.aria-label]="i18n.t('search.previous')"
+      (click)="search.previous()"
+    >
+      ↑
+    </button>
+    <button
+      type="button"
+      class="search-icon-button"
+      [disabled]="search.total() === 0"
+      [title]="i18n.t('search.next')"
+      [attr.aria-label]="i18n.t('search.next')"
+      (click)="search.next()"
+    >
+      ↓
+    </button>
+    <button
+      type="button"
+      class="search-icon-button search-toggle"
+      [class.search-toggle-active]="search.caseSensitive()"
+      [title]="i18n.t('search.caseSensitive')"
+      [attr.aria-label]="i18n.t('search.caseSensitive')"
+      [attr.aria-pressed]="search.caseSensitive()"
+      (click)="search.toggleCaseSensitive()"
+    >
+      Aa
+    </button>
+    <button
+      type="button"
+      class="search-icon-button search-toggle"
+      [class.search-toggle-active]="search.wholeWord()"
+      [title]="i18n.t('search.wholeWord')"
+      [attr.aria-label]="i18n.t('search.wholeWord')"
+      [attr.aria-pressed]="search.wholeWord()"
+      (click)="search.toggleWholeWord()"
+    >
+      ab
+    </button>
+    <button
+      type="button"
+      class="search-icon-button search-toggle"
+      [class.search-toggle-active]="search.useRegex()"
+      [title]="i18n.t('search.regex')"
+      [attr.aria-label]="i18n.t('search.regex')"
+      [attr.aria-pressed]="search.useRegex()"
+      (click)="search.toggleRegex()"
+    >
+      .*
+    </button>
+    <button
+      type="button"
+      class="search-icon-button"
+      [title]="i18n.t('search.toggleReplace')"
+      [attr.aria-label]="i18n.t('search.toggleReplace')"
+      [attr.aria-expanded]="search.replaceVisible()"
+      (click)="search.toggleReplace()"
+    >
+      ⇄
+    </button>
+    <button
+      type="button"
+      class="search-icon-button search-close"
+      [title]="i18n.t('search.close')"
+      [attr.aria-label]="i18n.t('search.close')"
+      (click)="close()"
+    >
+      ✕
+    </button>
+  </div>
+
+  @if (search.replaceVisible()) {
+    <div class="replace-row">
+      <input
+        #replaceInput
+        class="search-input"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        [value]="search.replacement()"
+        [placeholder]="i18n.t('search.replacePlaceholder')"
+        [attr.aria-label]="i18n.t('search.replacePlaceholder')"
+        (input)="onReplacement($event)"
+      />
+      <button
+        type="button"
+        class="search-text-button"
+        [disabled]="search.total() === 0"
+        (click)="search.replaceCurrent()"
+      >
+        {{ i18n.t('search.replace') }}
+      </button>
+      <button
+        type="button"
+        class="search-text-button"
+        [disabled]="search.total() === 0"
+        (click)="search.replaceAll()"
+      >
+        {{ i18n.t('search.replaceAll') }}
+      </button>
+    </div>
+  }
+
+  @if (search.invalidRegex()) {
+    <div class="search-error">{{ i18n.t('search.invalidRegex') }}</div>
+  }
+</div>

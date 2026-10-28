@@ -10,6 +10,9 @@
         aria-hidden="true"
         [innerHTML]="highlightedHtml()"
       ></pre>
+      @if (search.isOpen() && searchHtml()) {
+        <pre #searchLayer class="editor-search" aria-hidden="true" [innerHTML]="searchHtml()"></pre>
+      }
       <textarea
         #input
         class="editor-input"
@@ -27,5 +30,8 @@
       (scroll)="onPreviewScroll($event)"
       [innerHTML]="renderedHtml()"
     ></div>
+  }
+  @if (search.isOpen()) {
+    <app-search-bar />
   }
 </div>

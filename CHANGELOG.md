@@ -5,6 +5,15 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.7] - 2026-10-28
+
+### Ajouté
+
+- **Rechercher / remplacer dans le document** (`Ctrl/Cmd+F`, `Ctrl/Cmd+H`) : barre flottante avec compteur d'occurrences, navigation précédent/suivant (`Entrée` / `Maj+Entrée`), respect de la casse, mot entier et expressions régulières.
+- Surlignage des occurrences dans l'éditeur (occurrence courante distinguée) et dans l'aperçu ; la navigation sélectionne l'occurrence et fait défiler le volet concerné.
+- **Remplacer** et **Remplacer tout**, avec toast du nombre de remplacements ; « Remplacer tout » ne crée qu'une seule étape d'annulation et les références `$1`…`$9` sont développées en mode expression régulière.
+- Options de recherche mémorisées entre les sessions, entrées **Édition → Rechercher… / Remplacer…** et libellés traduits dans les 4 langues.
+
 ## [2026.10.6] - 2026-10-28
 
 ### Corrigé

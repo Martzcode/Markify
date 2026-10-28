@@ -71,6 +71,34 @@
   box-sizing: border-box;
 }
 
+/* Couche de surlignage de la recherche : même métrique que le textarea,
+   texte transparent, seuls les fonds des <mark> sont visibles. */
+.editor-search {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  color: transparent;
+}
+
+:host ::ng-deep .editor-search .search-hit {
+  background: rgb(255 213 0 / 32%);
+  border-radius: 2px;
+  color: transparent;
+}
+
+:host ::ng-deep .editor-search .search-hit-current {
+  background: rgb(255 140 0 / 62%);
+}
+
 .editor-input::selection {
   background: rgb(55 148 255 / 25%);
 }

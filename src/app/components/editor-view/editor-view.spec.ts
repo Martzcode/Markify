@@ -3,6 +3,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { DocumentService } from '../../services/document.service';
+import { SearchService } from '../../services/search.service';
 import { SessionService } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 
@@ -269,5 +270,120 @@ describe('EditorView', () => {
       delete (HTMLElement.prototype as unknown as Record<string, unknown>)['scrollHeight'];
       delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
     }
+  });
+
+  it('highlights search matches in the editor and in the preview', () => {
+    const fixture = createFixture('one two one', 'hybrid');
+    const documentService = TestBed.inject(DocumentService);
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+    const withMeasure = fixture.componentInstance as unknown as {
+      measureLineTop(textarea: HTMLTextAreaElement, offset: number): number;
+    };
+    vi.spyOn(withMeasure, 'measureLineTop').mockReturnValue(0);
+
+    search.setQuery('one');
+    search.open();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+
+    const layer = fixture.nativeElement.querySelector('.editor-search') as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.querySelectorAll('mark.search-hit').length).toBe(2);
+    expect(layer.innerHTML).toContain('search-hit-current');
+
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+    expect(preview.querySelectorAll('mark.search-hit').length).toBe(2);
+  });
+
+  it('selects the current match in the textarea when navigating', () => {
+    const fixture = createFixture('one two one', 'edit');
+    const documentService = TestBed.inject(DocumentService);
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    const setSelectionRange = vi.spyOn(textarea, 'setSelectionRange');
+    const withMeasure = fixture.componentInstance as unknown as {
+      measureLineTop(textarea: HTMLTextAreaElement, offset: number): number;
+    };
+    vi.spyOn(withMeasure, 'measureLineTop').mockReturnValue(0);
+
+    search.setQuery('one');
+    search.open();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+
+    expect(setSelectionRange).toHaveBeenLastCalledWith(0, 3);
+
+    search.next();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+
+    expect(setSelectionRange).toHaveBeenLastCalledWith(8, 11);
+  });
+
+  it('removes the search layer when the bar closes', () => {
+    const fixture = createFixture('one two one', 'hybrid');
+    const documentService = TestBed.inject(DocumentService);
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+    const withMeasure = fixture.componentInstance as unknown as {
+      measureLineTop(textarea: HTMLTextAreaElement, offset: number): number;
+    };
+    vi.spyOn(withMeasure, 'measureLineTop').mockReturnValue(0);
+
+    search.setQuery('one');
+    search.open();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.editor-search')).not.toBeNull();
+
+    search.close();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.editor-search')).toBeNull();
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+    expect(preview.querySelectorAll('mark.search-hit').length).toBe(0);
+  });
+
+  it('closes the search bar when the editor is destroyed', () => {
+    const fixture = createFixture('one two one', 'edit');
+    const documentService = TestBed.inject(DocumentService);
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+    const withMeasure = fixture.componentInstance as unknown as {
+      measureLineTop(textarea: HTMLTextAreaElement, offset: number): number;
+    };
+    vi.spyOn(withMeasure, 'measureLineTop').mockReturnValue(0);
+    search.setQuery('one');
+    search.open();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+
+    fixture.destroy();
+
+    expect(search.isOpen()).toBe(false);
+  });
+
+  it('scrolls the preview to the current match in read mode', () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(window.Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: scrollIntoView,
+    });
+    const fixture = createFixture('one two one', 'read');
+    const documentService = TestBed.inject(DocumentService);
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+
+    search.setQuery('one');
+    search.open();
+    TestBed.flushEffects();
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(fixture.nativeElement.querySelector('textarea')).toBeNull();
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 });

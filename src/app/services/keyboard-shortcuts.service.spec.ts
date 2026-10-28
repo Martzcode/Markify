@@ -6,6 +6,7 @@ import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
 import { KeyboardShortcutsService } from './keyboard-shortcuts.service';
+import { SearchService } from './search.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('KeyboardShortcutsService', () => {
@@ -216,5 +217,53 @@ describe('KeyboardShortcutsService', () => {
 
     unsaved.resolve('cancel');
     await expect(pending).resolves.toBe('cancel');
+  });
+
+  it('opens the search bar with Ctrl+F', () => {
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+
+    expect(keydown('f', { ctrlKey: true })).toBe(true);
+
+    expect(search.isOpen()).toBe(true);
+    expect(search.replaceVisible()).toBe(false);
+  });
+
+  it('opens the replace row with Ctrl+H', () => {
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+
+    expect(keydown('h', { ctrlKey: true })).toBe(true);
+
+    expect(search.isOpen()).toBe(true);
+    expect(search.replaceVisible()).toBe(true);
+  });
+
+  it('ignores Ctrl+F when no document is open', () => {
+    const search = TestBed.inject(SearchService);
+
+    expect(keydown('f', { ctrlKey: true })).toBe(false);
+    expect(search.isOpen()).toBe(false);
+  });
+
+  it('closes the search bar with Escape', () => {
+    documentService.isOpen.set(true);
+    const search = TestBed.inject(SearchService);
+    search.open();
+
+    expect(keydown('Escape')).toBe(true);
+
+    expect(search.isOpen()).toBe(false);
+  });
+
+  it('keeps document shortcuts inactive while typing in the search field', () => {
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    const spy = vi.spyOn(documentService, 'newFile');
+
+    expect(keydown('n', { ctrlKey: true }, input)).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+
+    input.remove();
   });
 });

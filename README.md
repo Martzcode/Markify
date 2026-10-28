@@ -20,7 +20,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **UI/UX craft**: custom title bar adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
 - **Internationalization**: UI fully translated into 4 languages (French, English, German, Spanish), automatic detection of the system language, persisted choice, type-safe translations verified at compile time
 - **Theming**: light/dark themes that follow the system preference in real time, through a CSS design-token system
-- **Software engineering practices**: service architecture with Angular Signals, unit testing (190 tests, Vitest), Tauri capability permissions model
+- **Software engineering practices**: service architecture with Angular Signals, unit testing (239 tests, Vitest), Tauri capability permissions model
 
 ### Features
 
@@ -31,6 +31,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **Close the current document** (File → Close document, `Ctrl/Cmd+W`) without closing the window
 - **Close the current folder** (File → Close Folder, or the sidebar header button): asks for confirmation and closes the open document too
 - **Save as / Save a copy** (File → Save As…, `Ctrl/Cmd+Shift+S`) through the native dialog
+- **Find & replace** (`Ctrl/Cmd+F`, `Ctrl/Cmd+H`): occurrence counter, next/previous navigation, match case, whole word and regular expressions, with highlighting in both the editor and the preview; replace all is a single undo step
 - **Session restore**: on startup, reopens the last file and folder, view mode, visible panels, expanded folders, scroll position and the window's size
 - **Undo/Redo** with grouped typing history, **Cut/Copy/Paste** via the native clipboard
 - **4 languages**: Français, English, Deutsch, Español
@@ -86,7 +87,7 @@ npm run tauri:build # Build a production bundle (.deb, .AppImage, .msi, .msix, .
 
 ### Testing
 
-190 unit tests (23 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
+239 unit tests (26 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the search service and its matching/replacement utilities, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
 
 ### Releases
 
@@ -117,6 +118,7 @@ AGPL-3.0
 - **Fermer le document courant** (Fichier → Fermer le document, `Ctrl/Cmd+W`) sans fermer la fenêtre
 - **Fermer le dossier courant** (Fichier → Fermer le dossier, ou bouton dans l'en-tête de l'explorateur) : demande confirmation et ferme aussi le document ouvert
 - **Enregistrer sous / Enregistrer une copie** (Fichier → Enregistrer sous…, `Ctrl/Cmd+Shift+S`) via le dialogue natif
+- **Rechercher / remplacer** (`Ctrl/Cmd+F`, `Ctrl/Cmd+H`) : compteur d'occurrences, navigation précédent/suivant, respect de la casse, mot entier et expressions régulières, avec surlignage dans l'éditeur et l'aperçu ; « Remplacer tout » ne fait qu'une seule étape d'annulation
 - **Restauration de session** : au démarrage, réouverture du dernier fichier et dossier, du mode de vue, des panneaux visibles, des dossiers dépliés, de la position de défilement et de la taille de la fenêtre
 - **Annuler/Rétablir** avec historique de frappe groupé, **Couper/Copier/Coller** via le presse-papiers natif
 - **4 langues** : Français, English, Deutsch, Español
@@ -172,7 +174,7 @@ npm run tauri:build # Générer un paquet de production (.deb, .AppImage, .msi, 
 
 ### Tests
 
-190 tests unitaires (23 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
+239 tests unitaires (26 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, le service de recherche et ses utilitaires de correspondance/remplacement, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
 
 ### Releases
 

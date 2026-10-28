@@ -5,8 +5,10 @@ import {
   ElementRef,
   HostListener,
   Injector,
+  OnDestroy,
   afterNextRender,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -15,10 +17,13 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { SearchService } from '../../services/search.service';
 import { SessionService, type ScrollRatios } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
 import { renderMarkdown } from '../../utils/markdown-render';
+import { highlightRenderedHtml, renderSearchLayer } from '../../utils/search';
+import { SearchBar } from '../search-bar/search-bar';
 
 /** Position verticale relative d'une zone défilante, entre 0 et 1. */
 function scrollRatio(element: {
@@ -32,11 +37,13 @@ function scrollRatio(element: {
 
 @Component({
   selector: 'app-editor-view',
+  imports: [SearchBar],
   templateUrl: './editor-view.html',
   styleUrl: './editor-view.css',
 })
-export class EditorView {
+export class EditorView implements OnDestroy {
   protected readonly document = inject(DocumentService);
+  protected readonly search = inject(SearchService);
   private readonly editorRef = inject(EditorRefService);
   private readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -45,17 +52,29 @@ export class EditorView {
   private readonly injector = inject(Injector);
   private readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('input');
   private readonly highlightEl = viewChild<ElementRef<HTMLElement>>('highlight');
+  private readonly searchEl = viewChild<ElementRef<HTMLElement>>('searchLayer');
   private readonly previewEl = viewChild<ElementRef<HTMLElement>>('preview');
 
-  protected readonly renderedHtml = computed(() =>
-    this.sanitizer.bypassSecurityTrustHtml(
-      renderMarkdown(this.document.content(), this.i18n.t('code.copy')),
-    ),
-  );
+  protected readonly renderedHtml = computed(() => {
+    const html = renderMarkdown(this.document.content(), this.i18n.t('code.copy'));
+    const query = this.search.query();
+    const highlighted =
+      this.search.isOpen() && query !== '' && !this.search.invalidRegex()
+        ? highlightRenderedHtml(html, query, this.search.options())
+        : html;
+    return this.sanitizer.bypassSecurityTrustHtml(highlighted);
+  });
 
   protected readonly highlightedHtml = computed(() =>
     this.document.content() ? highlightMarkdown(this.document.content()) : '',
   );
+
+  protected readonly searchHtml = computed(() => {
+    if (!this.search.isOpen() || this.search.query() === '' || this.search.invalidRegex()) {
+      return '';
+    }
+    return renderSearchLayer(this.document.content(), this.search.matches(), this.search.index());
+  });
 
   constructor() {
     effect(() => {
@@ -91,6 +110,60 @@ export class EditorView {
         { injector: this.injector },
       );
     });
+    effect(() => {
+      // On ne suit que le jeton de navigation : une simple frappe dans le
+      // document ne doit pas faire sauter l'éditeur sur la première occurrence.
+      this.search.navigation();
+      if (!this.search.isOpen()) {
+        return;
+      }
+      untracked(() => this.revealCurrentMatch());
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Le document est fermé : la recherche ne doit pas rester ouverte pour le
+    // prochain document.
+    this.search.close();
+  }
+
+  /**
+   * Fait apparaître l'occurrence courante : sélection dans le `textarea` et
+   * défilement de l'aperçu. Appelée après chaque navigation (ouverture,
+   * requête, précédent/suivant, remplacement).
+   */
+  private revealCurrentMatch(): void {
+    const match = this.search.currentMatch();
+    if (!match) {
+      return;
+    }
+    const mode = this.document.mode();
+    if (mode !== 'read') {
+      const textarea = this.inputEl()?.nativeElement;
+      if (textarea) {
+        textarea.setSelectionRange(match.start, match.end);
+        const top = this.measureLineTop(textarea, match.start);
+        const centered = top - Math.max(0, textarea.clientHeight / 2 - 12);
+        textarea.scrollTop = Math.max(0, centered);
+        this.syncHighlightScroll();
+      }
+    }
+    if (mode !== 'edit') {
+      afterNextRender(() => this.scrollPreviewToMatch(), { injector: this.injector });
+    }
+  }
+
+  private scrollPreviewToMatch(): void {
+    const preview = this.previewEl()?.nativeElement;
+    if (!preview) {
+      return;
+    }
+    const marks = preview.querySelectorAll<HTMLElement>('mark.search-hit');
+    if (marks.length === 0) {
+      return;
+    }
+    const index = Math.min(Math.max(this.search.index(), 0), marks.length - 1);
+    marks[index]?.scrollIntoView?.({ block: 'center' });
   }
 
   /** Applique le défilement restauré une fois le contenu rendu. */
@@ -158,10 +231,18 @@ export class EditorView {
 
   private syncHighlightScroll(): void {
     const input = this.inputEl()?.nativeElement;
+    if (!input) {
+      return;
+    }
     const highlight = this.highlightEl()?.nativeElement;
-    if (input && highlight) {
+    if (highlight) {
       highlight.scrollTop = input.scrollTop;
       highlight.scrollLeft = input.scrollLeft;
+    }
+    const searchLayer = this.searchEl()?.nativeElement;
+    if (searchLayer) {
+      searchLayer.scrollTop = input.scrollTop;
+      searchLayer.scrollLeft = input.scrollLeft;
     }
   }
 

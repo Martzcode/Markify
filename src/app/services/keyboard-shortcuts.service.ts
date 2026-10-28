@@ -4,6 +4,7 @@ import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
+import { SearchService } from './search.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +14,7 @@ export class KeyboardShortcutsService implements OnDestroy {
   private readonly explorer = inject(ExplorerService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
   private readonly confirmDialog = inject(ConfirmService);
+  private readonly search = inject(SearchService);
   private readonly win = getCurrentWindow();
   private readonly onKeydown = (event: KeyboardEvent) => this.handleKeydown(event);
 
@@ -32,6 +34,28 @@ export class KeyboardShortcutsService implements OnDestroy {
     }
     const mod = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
+
+    // Recherche : traitée avant le garde des champs de saisie, pour que
+    // Ctrl+F / Ctrl+H fonctionnent même depuis le champ de recherche.
+    if (mod && !event.altKey && (key === 'f' || key === 'h')) {
+      if (this.document.isOpen()) {
+        event.preventDefault();
+        this.search.open(key === 'h');
+      }
+      return;
+    }
+    if (event.key === 'Escape' && this.search.isOpen()) {
+      event.preventDefault();
+      this.search.close();
+      return;
+    }
+
+    // Les champs de saisie (barre de recherche) gardent leurs raccourcis
+    // natifs : pas d'annulation ni d'enregistrement du document depuis là.
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.isContentEditable)) {
+      return;
+    }
 
     if (mod && !event.altKey) {
       switch (key) {
