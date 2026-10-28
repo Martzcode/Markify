@@ -5,6 +5,15 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.5] - 2026-10-28
+
+### Ajouté
+
+- **Fermer le dossier courant** sans fermer le document ouvert : entrée de menu **Fichier → Fermer le dossier** et bouton dédié dans l'en-tête de l'explorateur. L'arborescence est vidée, le panneau masqué et le dossier n'est plus restauré au prochain lancement.
+- **Enregistrer sous…** (`Ctrl/Cmd+Shift+S`) : enregistre le document à un nouvel emplacement et le rattache à ce fichier.
+- **Enregistrer une copie…** : écrit une copie suffixée du document sans changer le fichier courant ni son état modifié.
+- Nouveaux libellés traduits dans les 4 langues et toasts de confirmation.
+
 ## [2026.10.4] - 2026-10-28
 
 ### Ajouté

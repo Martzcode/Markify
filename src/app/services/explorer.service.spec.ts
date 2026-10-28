@@ -144,4 +144,21 @@ describe('ExplorerService', () => {
     expect(service.visible()).toBe(false);
     expect(service.expanded()).toEqual(new Set());
   });
+
+  it('closes the current folder and hides the panel', async () => {
+    vi.mocked(invoke).mockResolvedValue([
+      { name: 'notes.md', path: '/work/notes.md', isDir: false, children: [] },
+    ]);
+    await service.openFolderAt('/work');
+    service.show();
+    service.select('/work/notes.md');
+
+    service.closeFolder();
+
+    expect(service.hasRoot()).toBe(false);
+    expect(service.rootPath()).toBeNull();
+    expect(service.rootEntries()).toEqual([]);
+    expect(service.selectedPath()).toBeNull();
+    expect(service.visible()).toBe(false);
+  });
 });

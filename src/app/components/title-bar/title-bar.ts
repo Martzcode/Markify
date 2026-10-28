@@ -72,6 +72,11 @@ export class TitleBar implements OnDestroy {
           action: () => this.explorer.openFolder(),
         },
         {
+          label: this.i18n.t('menu.file.closeFolder'),
+          disabled: !this.explorer.hasRoot(),
+          action: () => this.explorer.closeFolder(),
+        },
+        {
           label: this.i18n.t('menu.file.close'),
           shortcut: `${this.modKey}W`,
           disabled: !this.document.isOpen(),
@@ -81,6 +86,17 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.file.save'),
           shortcut: `${this.modKey}S`,
           action: () => this.document.saveFile(),
+        },
+        {
+          label: this.i18n.t('menu.file.saveAs'),
+          shortcut: `${this.shiftModKey}S`,
+          disabled: !this.document.isOpen(),
+          action: () => this.document.saveAs(),
+        },
+        {
+          label: this.i18n.t('menu.file.saveCopy'),
+          disabled: !this.document.isOpen(),
+          action: () => this.document.saveCopy(),
         },
         {
           label: this.i18n.t('menu.file.export'),

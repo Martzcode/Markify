@@ -13,6 +13,27 @@ export type EditorMode = 'read' | 'edit' | 'hybrid';
 
 const HISTORY_GROUP_MS = 500;
 
+/** Dernier segment d'un chemin, quel que soit le séparateur. */
+function baseName(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] || path;
+}
+
+/**
+ * Construit le chemin proposé pour une copie : même dossier, même extension,
+ * suffixe inséré avant l'extension (`note.md` → `note-copie.md`).
+ */
+function copyPath(path: string, suffix: string): string {
+  const index = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  const dir = path.slice(0, index + 1);
+  const base = path.slice(index + 1);
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0) {
+    return `${dir}${base}-${suffix}`;
+  }
+  return `${dir}${base.slice(0, dot)}-${suffix}${base.slice(dot)}`;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly i18n = inject(I18nService);
@@ -141,22 +162,92 @@ export class DocumentService {
     const existingPath = this.filePath();
     let path = existingPath;
     if (!path) {
-      path = await save({
-        title: this.i18n.t('dialog.save.title'),
-        defaultPath: this.i18n.t('dialog.save.defaultName') + '.md',
-        filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
-      });
+      path = await this.pickSavePath('dialog.save.title', this.defaultSaveName());
       if (!path) {
         return false;
       }
     }
+    if (!(await this.writeDocument(path))) {
+      return false;
+    }
+    this.filePath.set(path);
+    this.isDirty.set(false);
+    if (existingPath) {
+      this.toast.show(this.i18n.t('toast.saved'));
+    }
+    return true;
+  }
+
+  /**
+   * Enregistre le document sous un nouveau chemin et le rattache à ce
+   * fichier : les enregistrements suivants iront dans la nouvelle copie.
+   */
+  async saveAs(): Promise<boolean> {
+    this.error.set(null);
+    if (!this.isOpen()) {
+      return false;
+    }
+    const path = await this.pickSavePath(
+      'dialog.saveAs.title',
+      this.filePath() ?? this.defaultSaveName(),
+    );
+    if (!path) {
+      return false;
+    }
+    if (!(await this.writeDocument(path))) {
+      return false;
+    }
+    this.filePath.set(path);
+    this.isDirty.set(false);
+    this.toast.show(this.i18n.t('toast.savedAs', { name: baseName(path) }));
+    return true;
+  }
+
+  /**
+   * Écrit une copie du document à l'emplacement choisi sans changer le fichier
+   * courant : le document reste rattaché à son chemin d'origine, avec son état
+   * modifié éventuel.
+   */
+  async saveCopy(): Promise<boolean> {
+    this.error.set(null);
+    if (!this.isOpen()) {
+      return false;
+    }
+    const source = this.filePath();
+    const suffix = this.i18n.t('dialog.saveCopy.defaultSuffix');
+    const path = await this.pickSavePath(
+      'dialog.saveCopy.title',
+      source ? copyPath(source, suffix) : this.defaultSaveName(),
+    );
+    if (!path) {
+      return false;
+    }
+    if (!(await this.writeDocument(path))) {
+      return false;
+    }
+    this.toast.show(this.i18n.t('toast.copySaved', { name: baseName(path) }));
+    return true;
+  }
+
+  private defaultSaveName(): string {
+    return `${this.i18n.t('dialog.save.defaultName')}.md`;
+  }
+
+  private async pickSavePath(
+    titleKey: 'dialog.save.title' | 'dialog.saveAs.title' | 'dialog.saveCopy.title',
+    defaultPath: string,
+  ): Promise<string | null> {
+    const path = await save({
+      title: this.i18n.t(titleKey),
+      defaultPath,
+      filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
+    });
+    return typeof path === 'string' && path.length > 0 ? path : null;
+  }
+
+  private async writeDocument(path: string): Promise<boolean> {
     try {
       await invoke('write_markdown_file', { path, content: this.content() });
-      this.filePath.set(path);
-      this.isDirty.set(false);
-      if (existingPath) {
-        this.toast.show(this.i18n.t('toast.saved'));
-      }
       return true;
     } catch (err) {
       this.error.set(String(err));

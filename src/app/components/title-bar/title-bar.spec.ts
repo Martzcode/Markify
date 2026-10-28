@@ -52,6 +52,27 @@ describe('TitleBar', () => {
     expect(openFolder!.label).toContain('Open Folder');
   });
 
+  it('file menu contains a save-as item disabled while no document is open', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const fileMenu = menus[0];
+    const saveAs = fileMenu.items.find((item) => item.shortcut?.endsWith('Shift+S'));
+    expect(saveAs).toBeDefined();
+    expect(saveAs!.label).toContain('Save As');
+    expect(saveAs!.disabled).toBe(true);
+
+    const saveCopy = fileMenu.items.find((item) => item.label.includes('Copy'));
+    expect(saveCopy).toBeDefined();
+    expect(saveCopy!.disabled).toBe(true);
+  });
+
+  it('file menu contains a close-folder item disabled while no folder is open', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const fileMenu = menus[0];
+    const closeFolder = fileMenu.items.find((item) => item.label.includes('Close Folder'));
+    expect(closeFolder).toBeDefined();
+    expect(closeFolder!.disabled).toBe(true);
+  });
+
   it('view menu contains a toggle explorer item', () => {
     const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
     const viewMenu = menus[2];

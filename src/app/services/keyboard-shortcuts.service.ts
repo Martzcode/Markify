@@ -57,7 +57,11 @@ export class KeyboardShortcutsService implements OnDestroy {
           return;
         case 's':
           event.preventDefault();
-          this.document.saveFile();
+          if (event.shiftKey) {
+            void this.document.saveAs();
+          } else {
+            void this.document.saveFile();
+          }
           return;
         case 'e':
           event.preventDefault();

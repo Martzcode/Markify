@@ -73,6 +73,26 @@ describe('Sidebar', () => {
     expect(explorer.selectedPath()).toBe('/workspace/README.md');
   });
 
+  it('closes the folder from the header button', () => {
+    explorer.visible.set(true);
+    explorer.rootPath.set('/workspace');
+    explorer.rootEntries.set([
+      { name: 'README.md', path: '/workspace/README.md', isDir: false, children: [] },
+    ]);
+    explorer.expanded.set(new Set(['/workspace']));
+
+    const fixture = TestBed.createComponent(Sidebar);
+    fixture.detectChanges();
+
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('.sidebar-action');
+    (buttons[0] as HTMLElement).click();
+
+    expect(explorer.hasRoot()).toBe(false);
+    expect(explorer.rootPath()).toBeNull();
+    expect(explorer.rootEntries()).toEqual([]);
+    expect(explorer.visible()).toBe(false);
+  });
+
   it('expands a directory entry when clicked', async () => {
     explorer.visible.set(true);
     explorer.rootPath.set('/workspace');

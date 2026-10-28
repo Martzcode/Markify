@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { vi } from 'vitest';
+import { I18nService } from '../i18n/i18n.service';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
@@ -266,6 +267,84 @@ describe('DocumentService', () => {
     await service.saveFile();
 
     expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('saves the document under a new path and follows it', async () => {
+    vi.mocked(save).mockResolvedValue('/tmp/copy.md');
+    vi.mocked(invoke).mockResolvedValue(undefined);
+    service.filePath.set('/tmp/original.md');
+    service.isOpen.set(true);
+    service.setContent('# Hello');
+
+    await expect(service.saveAs()).resolves.toBe(true);
+
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: '/tmp/original.md' }));
+    expect(invoke).toHaveBeenCalledWith('write_markdown_file', {
+      path: '/tmp/copy.md',
+      content: '# Hello',
+    });
+    expect(service.filePath()).toBe('/tmp/copy.md');
+    expect(service.isDirty()).toBe(false);
+    expect(toast.message()).toContain('copy.md');
+  });
+
+  it('keeps the document untouched when the save-as dialog is cancelled', async () => {
+    vi.mocked(save).mockImplementation(() => Promise.resolve(null));
+    service.filePath.set('/tmp/original.md');
+    service.isOpen.set(true);
+    service.setContent('# Hello');
+
+    await expect(service.saveAs()).resolves.toBe(false);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(service.filePath()).toBe('/tmp/original.md');
+    expect(service.isDirty()).toBe(true);
+  });
+
+  it('does nothing when saving as without an open document', async () => {
+    await expect(service.saveAs()).resolves.toBe(false);
+
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('saves a copy without changing the current file', async () => {
+    const suffix = TestBed.inject(I18nService).t('dialog.saveCopy.defaultSuffix');
+    vi.mocked(save).mockResolvedValue('/tmp/original-copy.md');
+    vi.mocked(invoke).mockResolvedValue(undefined);
+    service.filePath.set('/tmp/original.md');
+    service.isOpen.set(true);
+    service.setContent('# Draft');
+
+    await expect(service.saveCopy()).resolves.toBe(true);
+
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultPath: `/tmp/original-${suffix}.md` }),
+    );
+    expect(invoke).toHaveBeenCalledWith('write_markdown_file', {
+      path: '/tmp/original-copy.md',
+      content: '# Draft',
+    });
+    expect(service.filePath()).toBe('/tmp/original.md');
+    expect(service.isDirty()).toBe(true);
+    expect(toast.message()).toContain('original-copy.md');
+  });
+
+  it('does nothing when the save-a-copy dialog is cancelled', async () => {
+    vi.mocked(save).mockImplementation(() => Promise.resolve(null));
+    service.filePath.set('/tmp/original.md');
+    service.isOpen.set(true);
+    service.setContent('# Draft');
+
+    await expect(service.saveCopy()).resolves.toBe(false);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(service.filePath()).toBe('/tmp/original.md');
+  });
+
+  it('does nothing when saving a copy without an open document', async () => {
+    await expect(service.saveCopy()).resolves.toBe(false);
+
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('exports the content as a pdf file', async () => {

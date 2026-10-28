@@ -3,14 +3,26 @@
     <span class="sidebar-title" [title]="explorer.rootPath() ?? ''">
       {{ explorer.rootName() }}
     </span>
-    <button
-      type="button"
-      class="sidebar-hide"
-      [title]="i18n.t('menu.view.explorer')"
-      (click)="explorer.hide()"
-    >
-      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-    </button>
+    <div class="sidebar-actions">
+      <button
+        type="button"
+        class="sidebar-action"
+        [title]="i18n.t('menu.file.closeFolder')"
+        [attr.aria-label]="i18n.t('menu.file.closeFolder')"
+        (click)="explorer.closeFolder()"
+      >
+        <i class="fa-solid fa-folder-minus" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="sidebar-action"
+        [title]="i18n.t('menu.view.explorer')"
+        [attr.aria-label]="i18n.t('menu.view.explorer')"
+        (click)="explorer.hide()"
+      >
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+    </div>
   </div>
   @if (explorer.loading()) {
     <div class="sidebar-status">{{ i18n.t('explorer.loading') }}</div>

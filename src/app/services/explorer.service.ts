@@ -103,6 +103,14 @@ export class ExplorerService {
     this.childrenCache.clear();
   }
 
+  /**
+   * Ferme le dossier courant sans toucher au document ouvert : l'arborescence
+   * est vidée et le panneau masqué.
+   */
+  closeFolder(): void {
+    this.reset();
+  }
+
   async revealFile(filePath: string): Promise<void> {
     const path = norm(filePath);
     const dir = parentDir(path);

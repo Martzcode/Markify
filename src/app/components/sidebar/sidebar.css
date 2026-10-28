@@ -40,7 +40,14 @@
   text-overflow: ellipsis;
 }
 
-.sidebar-hide {
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.sidebar-action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +62,7 @@
   cursor: default;
 }
 
-.sidebar-hide:hover {
+.sidebar-action:hover {
   background: var(--titlebar-hover-bg);
   color: var(--menu-fg);
 }

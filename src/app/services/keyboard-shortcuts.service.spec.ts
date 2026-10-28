@@ -84,6 +84,15 @@ describe('KeyboardShortcutsService', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('saves under a new path with Ctrl+Shift+S', () => {
+    const saveFile = vi.spyOn(documentService, 'saveFile').mockResolvedValue(true);
+    const saveAs = vi.spyOn(documentService, 'saveAs').mockResolvedValue(true);
+
+    expect(keydown('s', { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(saveAs).toHaveBeenCalledTimes(1);
+    expect(saveFile).not.toHaveBeenCalled();
+  });
+
   it('exports a pdf with Ctrl+E', () => {
     const spy = vi.spyOn(documentService, 'exportPdf').mockResolvedValue();
 
