@@ -75,4 +75,8 @@ export class ExplorerNode {
 export class Sidebar {
   protected readonly explorer = inject(ExplorerService);
   protected readonly i18n = inject(I18nService);
+
+  protected closeFolder(): void {
+    void this.explorer.closeFolder();
+  }
 }

@@ -74,7 +74,7 @@ export class TitleBar implements OnDestroy {
         {
           label: this.i18n.t('menu.file.closeFolder'),
           disabled: !this.explorer.hasRoot(),
-          action: () => this.explorer.closeFolder(),
+          action: () => void this.explorer.closeFolder(),
         },
         {
           label: this.i18n.t('menu.file.close'),

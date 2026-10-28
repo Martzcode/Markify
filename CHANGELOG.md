@@ -5,6 +5,16 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.6] - 2026-10-28
+
+### Corrigé
+
+- **Fermer le dossier** ne fonctionnait pas quand un document était ouvert : l'effet qui révèle le fichier courant relisait la racine de l'explorateur et rouvrait le dossier aussitôt après sa fermeture. Cet effet ne dépend désormais que du chemin du document.
+
+### Modifié
+
+- Fermer le dossier avec un document ouvert demande maintenant confirmation (« Tout fermer » / « Annuler »). En cas de validation, le document est fermé lui aussi, avec le garde-fou des modifications non enregistrées, puis le dossier est vidé et masqué.
+
 ## [2026.10.5] - 2026-10-28
 
 ### Ajouté

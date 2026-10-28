@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { vi } from 'vitest';
+import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
@@ -67,6 +68,22 @@ describe('KeyboardShortcutsService', () => {
 
     expect(keydown('w', { ctrlKey: true })).toBe(false);
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('ignores shortcuts while the confirmation dialog is open', () => {
+    const confirm = TestBed.inject(ConfirmService);
+    void confirm.confirm({
+      title: 'Close the folder?',
+      message: 'The folder will be closed.',
+      confirmLabel: 'Close all',
+      cancelLabel: 'Cancel',
+    });
+    const spy = vi.spyOn(documentService, 'newFile');
+
+    expect(keydown('n', { ctrlKey: true })).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+
+    confirm.cancel();
   });
 
   it('toggles the explorer with Ctrl+B', () => {

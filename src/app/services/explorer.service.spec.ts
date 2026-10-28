@@ -2,7 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { vi } from 'vitest';
+import { ConfirmService } from './confirm.service';
+import { DocumentService } from './document.service';
 import { ExplorerService } from './explorer.service';
+import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('ExplorerService', () => {
   let service: ExplorerService;
@@ -145,20 +148,109 @@ describe('ExplorerService', () => {
     expect(service.expanded()).toEqual(new Set());
   });
 
-  it('closes the current folder and hides the panel', async () => {
+  it('closes the current folder and hides the panel when no document is open', async () => {
     vi.mocked(invoke).mockResolvedValue([
       { name: 'notes.md', path: '/work/notes.md', isDir: false, children: [] },
     ]);
     await service.openFolderAt('/work');
     service.show();
     service.select('/work/notes.md');
+    const confirm = TestBed.inject(ConfirmService);
 
-    service.closeFolder();
+    await expect(service.closeFolder()).resolves.toBe(true);
 
+    expect(confirm.isOpen()).toBe(false);
     expect(service.hasRoot()).toBe(false);
     expect(service.rootPath()).toBeNull();
     expect(service.rootEntries()).toEqual([]);
     expect(service.selectedPath()).toBeNull();
+    expect(service.visible()).toBe(false);
+  });
+
+  it('asks for confirmation before closing the folder with an open document', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    const document = TestBed.inject(DocumentService);
+    const confirm = TestBed.inject(ConfirmService);
+    await service.openFolderAt('/work');
+    service.show();
+    document.isOpen.set(true);
+    document.isDirty.set(false);
+
+    const pending = service.closeFolder();
+
+    expect(confirm.isOpen()).toBe(true);
+    expect(confirm.options()?.message).toContain('work');
+    expect(document.isOpen()).toBe(true);
+
+    confirm.accept();
+
+    await expect(pending).resolves.toBe(true);
+    expect(document.isOpen()).toBe(false);
+    expect(service.hasRoot()).toBe(false);
+  });
+
+  it('keeps the folder open when the confirmation is cancelled', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    const document = TestBed.inject(DocumentService);
+    const confirm = TestBed.inject(ConfirmService);
+    await service.openFolderAt('/work');
+    service.show();
+    document.isOpen.set(true);
+    document.isDirty.set(false);
+
+    const pending = service.closeFolder();
+    confirm.cancel();
+
+    await expect(pending).resolves.toBe(false);
+    expect(document.isOpen()).toBe(true);
+    expect(service.rootPath()).toBe('/work');
+    expect(service.visible()).toBe(true);
+  });
+
+  it('keeps the folder open when the unsaved-changes dialog is cancelled', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    const document = TestBed.inject(DocumentService);
+    const confirm = TestBed.inject(ConfirmService);
+    const unsaved = TestBed.inject(UnsavedChangesService);
+    await service.openFolderAt('/work');
+    service.show();
+    document.isOpen.set(true);
+    document.setContent('draft');
+
+    const pending = service.closeFolder();
+    confirm.accept();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(unsaved.isOpen()).toBe(true);
+    unsaved.resolve('cancel');
+
+    await expect(pending).resolves.toBe(false);
+    expect(document.isOpen()).toBe(true);
+    expect(document.content()).toBe('draft');
+    expect(service.rootPath()).toBe('/work');
+  });
+
+  it('closes the folder and discards the document on confirmation', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    const document = TestBed.inject(DocumentService);
+    const confirm = TestBed.inject(ConfirmService);
+    const unsaved = TestBed.inject(UnsavedChangesService);
+    await service.openFolderAt('/work');
+    service.show();
+    document.isOpen.set(true);
+    document.filePath.set('/work/draft.md');
+    document.setContent('draft');
+
+    const pending = service.closeFolder();
+    confirm.accept();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    unsaved.resolve('discard');
+
+    await expect(pending).resolves.toBe(true);
+    expect(document.isOpen()).toBe(false);
+    expect(document.filePath()).toBeNull();
+    expect(service.hasRoot()).toBe(false);
     expect(service.visible()).toBe(false);
   });
 });

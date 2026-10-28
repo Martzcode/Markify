@@ -2,6 +2,8 @@ import { Injectable, Injector, computed, inject, signal } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { I18nService } from '../i18n/i18n.service';
+import { ConfirmService } from './confirm.service';
+import { DocumentService } from './document.service';
 import { TocService } from './toc.service';
 
 export interface ExplorerEntry {
@@ -25,6 +27,8 @@ function parentDir(p: string): string | null {
 export class ExplorerService {
   private readonly i18n = inject(I18nService);
   private readonly injector = inject(Injector);
+  private readonly document = inject(DocumentService);
+  private readonly confirmDialog = inject(ConfirmService);
   private readonly childrenCache = new Map<string, ExplorerEntry[]>();
 
   readonly visible = signal(false);
@@ -104,11 +108,29 @@ export class ExplorerService {
   }
 
   /**
-   * Ferme le dossier courant sans toucher au document ouvert : l'arborescence
-   * est vidée et le panneau masqué.
+   * Ferme le dossier courant. Si un document est ouvert, demande d'abord
+   * confirmation (il sera fermé lui aussi), puis applique le garde-fou des
+   * modifications non enregistrées. Renvoie `false` si l'utilisateur annule.
    */
-  closeFolder(): void {
+  async closeFolder(): Promise<boolean> {
+    if (this.document.isOpen()) {
+      const confirmed = await this.confirmDialog.confirm({
+        title: this.i18n.t('confirm.closeFolder.title'),
+        message: this.i18n.t('confirm.closeFolder.message', {
+          folder: this.rootName() ?? '',
+        }),
+        confirmLabel: this.i18n.t('confirm.closeFolder.confirm'),
+        cancelLabel: this.i18n.t('dialog.cancel'),
+      });
+      if (!confirmed) {
+        return false;
+      }
+      if (!(await this.document.closeFile())) {
+        return false;
+      }
+    }
     this.reset();
+    return true;
   }
 
   async revealFile(filePath: string): Promise<void> {

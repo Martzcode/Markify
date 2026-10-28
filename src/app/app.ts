@@ -1,7 +1,8 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, effect, inject, untracked } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AboutDialog } from './components/about-dialog/about-dialog';
 import { ActivityBar } from './components/activity-bar/activity-bar';
+import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog';
 import { EditorView } from './components/editor-view/editor-view';
 import { Sidebar } from './components/sidebar/sidebar';
 import { Toc } from './components/toc/toc';
@@ -9,6 +10,7 @@ import { TitleBar } from './components/title-bar/title-bar';
 import { UnsavedChangesDialog } from './components/unsaved-changes-dialog/unsaved-changes-dialog';
 import { I18nService } from './i18n/i18n.service';
 import { AboutDialogService } from './services/about-dialog.service';
+import { ConfirmService } from './services/confirm.service';
 import { DocumentService } from './services/document.service';
 import { ExplorerService } from './services/explorer.service';
 import { KeyboardShortcutsService } from './services/keyboard-shortcuts.service';
@@ -29,6 +31,7 @@ import { WindowCloseGuardService } from './services/window-close-guard.service';
     ActivityBar,
     AboutDialog,
     UnsavedChangesDialog,
+    ConfirmDialog,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -44,6 +47,7 @@ export class App {
   protected readonly toast = inject(ToastService);
   protected readonly about = inject(AboutDialogService);
   protected readonly unsaved = inject(UnsavedChangesService);
+  protected readonly confirm = inject(ConfirmService);
 
   constructor() {
     void this.shortcuts;
@@ -52,7 +56,9 @@ export class App {
     effect(() => {
       const path = this.document.filePath();
       if (path) {
-        void this.explorer.revealFile(path);
+        // Hors suivi : `revealFile` lit `rootPath` et ne doit pas relancer cet
+        // effet quand le dossier est fermé (sinon il se rouvre tout seul).
+        untracked(() => void this.explorer.revealFile(path));
       }
     });
     effect(() => {

@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { App } from './app';
 import { DocumentService } from './services/document.service';
+import { ExplorerService } from './services/explorer.service';
 import { TocService } from './services/toc.service';
 
 describe('App', () => {
@@ -37,5 +39,24 @@ describe('App', () => {
     documentService.isOpen.set(false);
     fixture.detectChanges();
     expect(toc.visible()).toBe(false);
+  });
+
+  it('reveals a file only when its path changes, not when the folder closes', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const documentService = TestBed.inject(DocumentService);
+    const explorer = TestBed.inject(ExplorerService);
+    const original = explorer.revealFile.bind(explorer);
+    const reveal = vi.spyOn(explorer, 'revealFile').mockImplementation((path) => original(path));
+
+    documentService.filePath.set('/workspace/note.md');
+    fixture.detectChanges();
+
+    expect(reveal).toHaveBeenCalledTimes(1);
+
+    explorer.closeFolder();
+    fixture.detectChanges();
+
+    expect(reveal).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
@@ -11,6 +12,7 @@ export class KeyboardShortcutsService implements OnDestroy {
   private readonly editorRef = inject(EditorRefService);
   private readonly explorer = inject(ExplorerService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+  private readonly confirmDialog = inject(ConfirmService);
   private readonly win = getCurrentWindow();
   private readonly onKeydown = (event: KeyboardEvent) => this.handleKeydown(event);
 
@@ -25,7 +27,7 @@ export class KeyboardShortcutsService implements OnDestroy {
   private handleKeydown(event: KeyboardEvent): void {
     // Le dialogue de confirmation gère lui-même Échap ; les autres raccourcis
     // ne doivent pas agir derrière une modale.
-    if (this.unsavedChanges.isOpen()) {
+    if (this.unsavedChanges.isOpen() || this.confirmDialog.isOpen()) {
       return;
     }
     const mod = event.ctrlKey || event.metaKey;
