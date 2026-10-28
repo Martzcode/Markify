@@ -13,6 +13,7 @@ import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { AboutDialogService } from '../../services/about-dialog.service';
+import { CodeBlockService } from '../../services/code-block.service';
 import { ExplorerService } from '../../services/explorer.service';
 import { SearchService } from '../../services/search.service';
 
@@ -42,6 +43,7 @@ export class TitleBar implements OnDestroy {
   protected readonly document = inject(DocumentService);
   private readonly editorRef = inject(EditorRefService);
   private readonly aboutDialog = inject(AboutDialogService);
+  private readonly codeBlocks = inject(CodeBlockService);
   private readonly explorer = inject(ExplorerService);
   private readonly search = inject(SearchService);
   private readonly unlisteners: Array<() => void> = [];
@@ -191,6 +193,11 @@ export class TitleBar implements OnDestroy {
               },
             ],
           },
+        },
+        {
+          label: this.i18n.t('menu.view.codeLineNumbers'),
+          checked: this.codeBlocks.lineNumbers(),
+          action: () => this.codeBlocks.toggleLineNumbers(),
         },
       ],
     },

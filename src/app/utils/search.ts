@@ -178,7 +178,13 @@ export function highlightRenderedHtml(html: string, query: string, options: Sear
   const walker = parsed.createTreeWalker(parsed.body, NodeFilter.SHOW_TEXT);
   const nodes: Text[] = [];
   while (walker.nextNode()) {
-    nodes.push(walker.currentNode as Text);
+    const node = walker.currentNode as Text;
+    // La gouttière des numéros de ligne n'appartient pas au code : on ne la
+    // surligne pas et le compteur reste cohérent avec la source.
+    if (node.parentElement?.closest('.code-block-gutter')) {
+      continue;
+    }
+    nodes.push(node);
   }
 
   for (const node of nodes) {

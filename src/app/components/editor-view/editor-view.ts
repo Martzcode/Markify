@@ -14,6 +14,7 @@ import {
 import { DomSanitizer } from '@angular/platform-browser';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
@@ -44,6 +45,7 @@ function scrollRatio(element: {
 export class EditorView implements OnDestroy {
   protected readonly document = inject(DocumentService);
   protected readonly search = inject(SearchService);
+  private readonly codeBlocks = inject(CodeBlockService);
   private readonly editorRef = inject(EditorRefService);
   private readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -56,7 +58,9 @@ export class EditorView implements OnDestroy {
   private readonly previewEl = viewChild<ElementRef<HTMLElement>>('preview');
 
   protected readonly renderedHtml = computed(() => {
-    const html = renderMarkdown(this.document.content(), this.i18n.t('code.copy'));
+    const html = renderMarkdown(this.document.content(), this.i18n.t('code.copy'), {
+      lineNumbers: this.codeBlocks.lineNumbers(),
+    });
     const query = this.search.query();
     const highlighted =
       this.search.isOpen() && query !== '' && !this.search.invalidRegex()

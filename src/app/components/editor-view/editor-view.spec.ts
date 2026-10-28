@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { vi } from 'vitest';
 import { EditorView } from './editor-view';
+import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
 import { SearchService } from '../../services/search.service';
 import { SessionService } from '../../services/session.service';
@@ -23,6 +24,7 @@ describe('EditorView', () => {
   });
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [EditorView],
     }).compileComponents();
@@ -385,5 +387,23 @@ describe('EditorView', () => {
 
     expect(fixture.nativeElement.querySelector('textarea')).toBeNull();
     expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it('renders highlighted code and optional line numbers in the preview', () => {
+    const fixture = createFixture('```ts\nconst a = 1;\nconst b = 2;\n```', 'read');
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+
+    expect(preview.querySelectorAll('.hljs-keyword').length).toBe(2);
+    expect(preview.querySelector('.code-block-gutter')).toBeNull();
+
+    TestBed.inject(CodeBlockService).toggleLineNumbers();
+    fixture.detectChanges();
+
+    const numbers = Array.from(
+      preview.querySelectorAll('.code-block-gutter span'),
+      (span) => span.textContent,
+    );
+    expect(numbers).toEqual(['1', '2']);
+    expect(preview.querySelector('pre code')?.textContent).toBe('const a = 1;\nconst b = 2;');
   });
 });

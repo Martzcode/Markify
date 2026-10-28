@@ -80,4 +80,20 @@ describe('TitleBar', () => {
     expect(item).toBeDefined();
     expect(item!.label).toContain('Explorer');
   });
+
+  it('view menu toggles code line numbers', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const viewMenu = menus[2];
+    const item = viewMenu.items.find((entry) => entry.label.includes('Code line numbers'));
+    expect(item).toBeDefined();
+    expect(item!.checked).toBe(false);
+
+    item!.action!();
+    const updated = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2];
+    expect(updated.items.find((entry) => entry.label.includes('Code line numbers'))!.checked).toBe(
+      true,
+    );
+  });
 });

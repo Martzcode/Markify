@@ -158,6 +158,25 @@ describe('highlightRenderedHtml', () => {
     expect(highlightRenderedHtml(html, '', literal)).toBe(html);
   });
 
+  it('highlights matches inside colored code blocks', () => {
+    const html = renderMarkdown('```ts\nconst one = 1;\n```', 'Copy');
+
+    const result = highlightRenderedHtml(html, 'one', literal);
+
+    expect(result).toContain('<mark class="search-hit">one</mark>');
+    expect(result).toContain('hljs-keyword');
+  });
+
+  it('never highlights the line-number gutter', () => {
+    const html = renderMarkdown('```ts\nconst a = 1;\nconst b = 2;\nconst c = 4;\n```', 'Copy', {
+      lineNumbers: true,
+    });
+
+    const result = highlightRenderedHtml(html, '3', literal);
+
+    expect(result).not.toContain('<mark');
+  });
+
   it('preserves the rendered structure of code blocks and headings', () => {
     const html = renderMarkdown('# Title\n\n```ts\nconst one = 1;\n```', 'Copy');
 

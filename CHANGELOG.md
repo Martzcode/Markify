@@ -5,6 +5,19 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.8] - 2026-10-28
+
+### Ajouté
+
+- **Coloration syntaxique des blocs de code** dans l'aperçu et l'export PDF, via `highlight.js` limité à 25 langages courants (JavaScript/TypeScript, Python, Rust, Go, Java, C/C++, C#, PHP, Ruby, Kotlin, Swift, SQL, HTML/XML, CSS/SCSS, JSON, YAML, TOML/INI, Bash, Dockerfile, diff, Markdown…).
+- Palettes claire et sombre alignées sur le thème de l'interface ; un langage inconnu ou absent retombe sur du texte échappé, sans erreur.
+- **Numéros de ligne optionnels** (désactivés par défaut) pour les blocs de code de l'aperçu, activables via **Affichage → Numéros de ligne du code** et mémorisés entre les sessions. La gouttière reste alignée sur le code et n'est ni copiée ni prise en compte par la recherche.
+- L'export PDF reprend les couleurs sous forme de styles inline, `html-to-pdfmake` ignorant les classes CSS.
+
+### Corrigé
+
+- Le contenu des blocs de code est désormais échappé avant rendu : un bloc contenant du HTML n'est plus interprété dans l'aperçu (injection HTML), et le texte copié reste identique à la source.
+
 ## [2026.10.7] - 2026-10-28
 
 ### Ajouté
