@@ -56,6 +56,13 @@ jobs:
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
+      - name: Check changelog entry
+        if: github.event_name == 'push'
+        run: |
+          if ! grep -q "^## \[${{ steps.compute.outputs.tag }}\]" CHANGELOG.md; then
+            echo "::warning title=CHANGELOG::Aucune section « ## [${{ steps.compute.outputs.tag }}] » dans CHANGELOG.md."
+          fi
+
   build:
     name: Build ${{ matrix.name }}
     needs: version
@@ -176,3 +183,37 @@ jobs:
           gh release create "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --title "Markify ${{ needs.version.outputs.tag }}" --generate-notes $(find . -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' -o -name '*.msix' \))
           gh release view "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --json body --jq .body | sed 's|^\*\*Full Changelog\*\*.*|**Changelog** : https://github.com/'"${GITHUB_REPOSITORY}"'/blob/main/CHANGELOG.md|' > notes.md
           gh release edit "${{ needs.version.outputs.tag }}" --repo "${GITHUB_REPOSITORY}" --notes-file notes.md
+
+  sync-version:
+    name: Sync version files
+    needs: [version, release]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Les fichiers de version sont bumpés après la publication : la release
+      # est construite depuis le commit poussé, puis `main` reflète la version
+      # qui vient d'être publiée. GITHUB_TOKEN n'entraîne pas de nouveau run.
+      - name: Apply version
+        run: node .github/scripts/bump-version.mjs ${{ needs.version.outputs.version }}
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if git diff --quiet -- package.json package-lock.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock; then
+            echo "Fichiers déjà en version ${VERSION}."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+          git commit -m "chore(release): ${VERSION} [skip ci]"
+          git push origin HEAD:main

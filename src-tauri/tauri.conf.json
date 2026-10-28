@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Markify",
-  "version": "0.1.0",
+  "version": "2026.10.1",
   "identifier": "com.markify.app",
   "build": {
     "frontendDist": "../dist/markify/browser",
@@ -39,6 +39,11 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    },
+    "windows": {
+      "wix": {
+        "version": "26.10.1"
+      }
     }
   }
 }

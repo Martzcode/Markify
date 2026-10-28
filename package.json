@@ -1,6 +1,6 @@
 {
   "name": "markify",
-  "version": "0.0.0",
+  "version": "2026.10.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -13,7 +13,8 @@
     "tauri:android": "tauri android dev",
     "tauri:android:build": "tauri android build --apk",
     "tauri:android:bundle": "tauri android build --aab --release",
-    "tauri:ios": "tauri ios init"
+    "tauri:ios": "tauri ios init",
+    "release:version": "node .github/scripts/bump-version.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.8",
