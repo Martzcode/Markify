@@ -1,6 +1,6 @@
 [package]
 name = "markify"
-version = "2026.10.7"
+version = "2026.10.8"
 description = "Markify - Markdown editor"
 authors = ["Marcello-calyps"]
 license = "AGPL-3.0"
