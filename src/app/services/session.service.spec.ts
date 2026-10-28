@@ -1,0 +1,191 @@
+import { TestBed } from '@angular/core/testing';
+import { invoke } from '@tauri-apps/api/core';
+import { vi } from 'vitest';
+import { DocumentService } from './document.service';
+import { ExplorerService } from './explorer.service';
+import { SESSION_STORAGE_KEY, SessionService, type SessionState } from './session.service';
+import { TocService } from './toc.service';
+import { ToastService } from './toast.service';
+
+describe('SessionService', () => {
+  let session: SessionService;
+  let document: DocumentService;
+  let explorer: ExplorerService;
+  let toc: TocService;
+  let toast: ToastService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    session = TestBed.inject(SessionService);
+    document = TestBed.inject(DocumentService);
+    explorer = TestBed.inject(ExplorerService);
+    toc = TestBed.inject(TocService);
+    toast = TestBed.inject(ToastService);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  function seed(state: Partial<SessionState>): void {
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({ version: 1, scroll: { editor: 0, preview: 0 }, ...state }),
+    );
+  }
+
+  function readSaved(): SessionState | null {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as SessionState) : null;
+  }
+
+  it('starts empty when there is no saved session', async () => {
+    await session.restore();
+
+    expect(document.isOpen()).toBe(false);
+    expect(explorer.hasRoot()).toBe(false);
+    expect(session.pendingScroll()).toBeNull();
+  });
+
+  it('restores the last file, mode, folder and panels', async () => {
+    vi.mocked(invoke).mockImplementation(((command: string, args?: { path?: string }) => {
+      if (command === 'list_directory') {
+        return Promise.resolve(
+          args?.path === '/work'
+            ? [{ name: 'sub', path: '/work/sub', isDir: true, children: [] }]
+            : [],
+        );
+      }
+      if (command === 'read_markdown_file') {
+        return Promise.resolve('# Restored');
+      }
+      return Promise.resolve(null);
+    }) as unknown as typeof invoke);
+    seed({
+      filePath: '/work/sub/notes.md',
+      folderPath: '/work',
+      mode: 'edit',
+      explorerVisible: true,
+      expandedPaths: ['/work/sub'],
+      scroll: { editor: 0.42, preview: 0 },
+    });
+
+    await session.restore();
+
+    expect(document.content()).toBe('# Restored');
+    expect(document.filePath()).toBe('/work/sub/notes.md');
+    expect(document.isOpen()).toBe(true);
+    expect(document.mode()).toBe('edit');
+    expect(explorer.rootPath()).toBe('/work');
+    expect(explorer.visible()).toBe(true);
+    expect(explorer.expanded().has('/work/sub')).toBe(true);
+    expect(session.pendingScroll()).toEqual({ editor: 0.42, preview: 0 });
+  });
+
+  it('restores the table of contents when it was the visible panel', async () => {
+    seed({ tocVisible: true, explorerVisible: false });
+
+    await session.restore();
+
+    expect(toc.visible()).toBe(true);
+    expect(explorer.visible()).toBe(false);
+  });
+
+  it('gives priority to the explorer when both panels were saved', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    seed({ folderPath: '/work', explorerVisible: true, tocVisible: true });
+
+    await session.restore();
+
+    expect(explorer.visible()).toBe(true);
+    expect(toc.visible()).toBe(false);
+  });
+
+  it('restores the table of contents when the saved folder is gone', async () => {
+    vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
+    seed({ folderPath: '/gone', explorerVisible: true, tocVisible: true });
+
+    await session.restore();
+
+    expect(explorer.visible()).toBe(false);
+    expect(toc.visible()).toBe(true);
+  });
+
+  it('falls back to an empty editor when the saved file is gone', async () => {
+    vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
+    seed({ filePath: '/gone/notes.md', mode: 'hybrid' });
+
+    await session.restore();
+
+    expect(document.isOpen()).toBe(false);
+    expect(document.filePath()).toBeNull();
+    expect(document.mode()).toBe('read');
+    expect(toast.message()).toContain('notes.md');
+    expect(readSaved()?.filePath).toBeNull();
+  });
+
+  it('forgets the explorer when the saved folder is gone', async () => {
+    vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
+    seed({ folderPath: '/gone', explorerVisible: true });
+
+    await session.restore();
+
+    expect(explorer.hasRoot()).toBe(false);
+    expect(explorer.visible()).toBe(false);
+    expect(readSaved()?.folderPath).toBeNull();
+  });
+
+  it('ignores a corrupt or outdated session payload', async () => {
+    localStorage.setItem(SESSION_STORAGE_KEY, '{not json');
+    await session.restore();
+    expect(document.isOpen()).toBe(false);
+
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ version: 99, filePath: '/x.md' }));
+    document.filePath.set(null);
+    await session.restore();
+
+    expect(document.isOpen()).toBe(false);
+    expect(invoke).not.toHaveBeenCalledWith('read_markdown_file', expect.anything());
+  });
+
+  it('persists state changes after the debounce', async () => {
+    vi.useFakeTimers();
+    await session.restore();
+
+    document.filePath.set('/tmp/notes.md');
+    document.setMode('hybrid');
+    session.scheduleSave();
+
+    expect(readSaved()?.filePath).toBeNull();
+
+    vi.advanceTimersByTime(600);
+
+    const saved = readSaved();
+    expect(saved?.filePath).toBe('/tmp/notes.md');
+    expect(saved?.mode).toBe('hybrid');
+  });
+
+  it('flushes pending changes immediately', async () => {
+    vi.useFakeTimers();
+    await session.restore();
+
+    document.setMode('edit');
+    session.scheduleSave();
+    session.flush();
+
+    expect(readSaved()?.mode).toBe('edit');
+  });
+
+  it('stores scroll positions without writing on every event', async () => {
+    vi.useFakeTimers();
+    await session.restore();
+
+    session.captureScroll({ editor: 0.4 });
+    session.captureScroll({ editor: 0.5 });
+    vi.advanceTimersByTime(600);
+
+    expect(readSaved()?.scroll).toEqual({ editor: 0.5, preview: 0 });
+  });
+});

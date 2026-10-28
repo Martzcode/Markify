@@ -5,6 +5,7 @@ import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
 import { KeyboardShortcutsService } from './keyboard-shortcuts.service';
+import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('KeyboardShortcutsService', () => {
   let documentService: DocumentService;
@@ -39,7 +40,7 @@ describe('KeyboardShortcutsService', () => {
   });
 
   it('opens a file with Ctrl+O', () => {
-    const spy = vi.spyOn(documentService, 'openFile').mockResolvedValue();
+    const spy = vi.spyOn(documentService, 'openFile').mockResolvedValue(true);
 
     expect(keydown('o', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -62,7 +63,7 @@ describe('KeyboardShortcutsService', () => {
   });
 
   it('saves with Ctrl+S', () => {
-    const spy = vi.spyOn(documentService, 'saveFile').mockResolvedValue();
+    const spy = vi.spyOn(documentService, 'saveFile').mockResolvedValue(true);
 
     expect(keydown('s', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -162,5 +163,17 @@ describe('KeyboardShortcutsService', () => {
     expect(keydown('F5')).toBe(false);
     expect(undo).not.toHaveBeenCalled();
     expect(save).not.toHaveBeenCalled();
+  });
+
+  it('ignores shortcuts while the unsaved-changes dialog is open', async () => {
+    const unsaved = TestBed.inject(UnsavedChangesService);
+    const newFile = vi.spyOn(documentService, 'newFile');
+    const pending = unsaved.confirm();
+
+    expect(keydown('n', { ctrlKey: true })).toBe(false);
+    expect(newFile).not.toHaveBeenCalled();
+
+    unsaved.resolve('cancel');
+    await expect(pending).resolves.toBe('cancel');
   });
 });

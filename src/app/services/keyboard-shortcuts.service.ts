@@ -3,12 +3,14 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
+import { UnsavedChangesService } from './unsaved-changes.service';
 
 @Injectable({ providedIn: 'root' })
 export class KeyboardShortcutsService implements OnDestroy {
   private readonly document = inject(DocumentService);
   private readonly editorRef = inject(EditorRefService);
   private readonly explorer = inject(ExplorerService);
+  private readonly unsavedChanges = inject(UnsavedChangesService);
   private readonly win = getCurrentWindow();
   private readonly onKeydown = (event: KeyboardEvent) => this.handleKeydown(event);
 
@@ -21,6 +23,11 @@ export class KeyboardShortcutsService implements OnDestroy {
   }
 
   private handleKeydown(event: KeyboardEvent): void {
+    // Le dialogue de confirmation gère lui-même Échap ; les autres raccourcis
+    // ne doivent pas agir derrière une modale.
+    if (this.unsavedChanges.isOpen()) {
+      return;
+    }
     const mod = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
 
@@ -28,14 +35,14 @@ export class KeyboardShortcutsService implements OnDestroy {
       switch (key) {
         case 'n':
           event.preventDefault();
-          this.document.newFile();
+          void this.document.newFile();
           return;
         case 'o':
           event.preventDefault();
           if (event.shiftKey) {
             this.explorer.openFolder();
           } else {
-            this.document.openFile();
+            void this.document.openFile();
           }
           return;
         case 'b':

@@ -5,6 +5,7 @@ import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { I18nService } from '../i18n/i18n.service';
 import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
+import { UnsavedChangesService } from './unsaved-changes.service';
 import { generatePdf } from '../utils/pdf-export';
 import { renderMarkdownPlain } from '../utils/markdown-render';
 
@@ -17,6 +18,7 @@ export class DocumentService {
   private readonly i18n = inject(I18nService);
   private readonly toast = inject(ToastService);
   private readonly editorRef = inject(EditorRefService);
+  private readonly unsavedChanges = inject(UnsavedChangesService);
 
   readonly content = signal('');
   readonly filePath = signal<string | null>(null);
@@ -32,7 +34,15 @@ export class DocumentService {
   readonly canUndo = computed(() => this.undoStack().length > 0);
   readonly canRedo = computed(() => this.redoStack().length > 0);
 
-  newFile(): void {
+  async newFile(): Promise<boolean> {
+    if (!(await this.confirmDiscardChanges())) {
+      return false;
+    }
+    this.resetDocument();
+    return true;
+  }
+
+  private resetDocument(): void {
     this.error.set(null);
     this.content.set('');
     this.filePath.set(null);
@@ -42,7 +52,10 @@ export class DocumentService {
     this.resetHistory();
   }
 
-  async openFile(): Promise<void> {
+  async openFile(): Promise<boolean> {
+    if (!(await this.confirmDiscardChanges())) {
+      return false;
+    }
     this.error.set(null);
     const path = await open({
       title: this.i18n.t('dialog.open.title'),
@@ -50,12 +63,28 @@ export class DocumentService {
       multiple: false,
     });
     if (typeof path !== 'string') {
-      return;
+      return false;
     }
-    await this.openPath(path);
+    return this.loadPath(path);
   }
 
-  async openPath(path: string): Promise<void> {
+  async openPath(path: string): Promise<boolean> {
+    if (!(await this.confirmDiscardChanges())) {
+      return false;
+    }
+    return this.loadPath(path);
+  }
+
+  /**
+   * Charge un fichier sans passer par le garde-fou des modifications : utilisé
+   * au démarrage pour restaurer la session, alors qu'aucun document n'est
+   * encore ouvert.
+   */
+  restorePath(path: string): Promise<boolean> {
+    return this.loadPath(path);
+  }
+
+  private async loadPath(path: string): Promise<boolean> {
     this.error.set(null);
     try {
       const content = await invoke<string>('read_markdown_file', { path });
@@ -65,12 +94,33 @@ export class DocumentService {
       this.isDirty.set(false);
       this.mode.set('read');
       this.resetHistory();
+      return true;
     } catch (err) {
       this.error.set(String(err));
+      return false;
     }
   }
 
-  async saveFile(): Promise<void> {
+  /**
+   * Vérifie que le document courant peut être abandonné sans perte.
+   * Retourne `true` si l'utilisateur a enregistré ou accepté de perdre ses
+   * modifications, `false` s'il a annulé ou si l'enregistrement a échoué.
+   */
+  async confirmDiscardChanges(): Promise<boolean> {
+    if (!this.isDirty()) {
+      return true;
+    }
+    const choice = await this.unsavedChanges.confirm();
+    if (choice === 'cancel') {
+      return false;
+    }
+    if (choice === 'discard') {
+      return true;
+    }
+    return this.saveFile();
+  }
+
+  async saveFile(): Promise<boolean> {
     this.error.set(null);
     const existingPath = this.filePath();
     let path = existingPath;
@@ -81,7 +131,7 @@ export class DocumentService {
         filters: [{ name: 'Markdown / MDX', extensions: ['md', 'markdown', 'mdx'] }],
       });
       if (!path) {
-        return;
+        return false;
       }
     }
     try {
@@ -91,8 +141,10 @@ export class DocumentService {
       if (existingPath) {
         this.toast.show(this.i18n.t('toast.saved'));
       }
+      return true;
     } catch (err) {
       this.error.set(String(err));
+      return false;
     }
   }
 

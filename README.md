@@ -20,13 +20,15 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **UI/UX craft**: custom title bar adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
 - **Internationalization**: UI fully translated into 4 languages (French, English, German, Spanish), automatic detection of the system language, persisted choice, type-safe translations verified at compile time
 - **Theming**: light/dark themes that follow the system preference in real time, through a CSS design-token system
-- **Software engineering practices**: service architecture with Angular Signals, unit testing (82 tests, Vitest), Tauri capability permissions model
+- **Software engineering practices**: service architecture with Angular Signals, unit testing (155 tests, Vitest), Tauri capability permissions model
 
 ### Features
 
 - **Open & save** Markdown files (`.md`, `.markdown`, `.mdx`) with native file dialogs
 - **Export to PDF** (File → Export, `Ctrl/Cmd+E`): full rendering with system fonts and embedded images, native save dialog
 - **Three view modes**: Read, Edit, and Hybrid (edit + live preview side by side)
+- **Unsaved changes protection**: a Save / Don't save / Cancel prompt before closing the window, creating a new file or switching documents
+- **Session restore**: on startup, reopens the last file and folder, view mode, visible panels, expanded folders, scroll position, and the window's size/position
 - **Undo/Redo** with grouped typing history, **Cut/Copy/Paste** via the native clipboard
 - **4 languages**: Français, English, Deutsch, Español
 - **Light & dark themes** following the system
@@ -81,11 +83,11 @@ npm run tauri:build # Build a production bundle (.deb, .AppImage, .msi, .msix, .
 
 ### Testing
 
-82 unit tests (12 files) covering the document service (open/save/new, undo/redo, clipboard operations), the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
+155 unit tests (21 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
 
 ### Releases
 
-Pushing to `main` triggers a GitHub Actions workflow that computes the next version (`YYYY.M.N`), builds the full cross-platform matrix (Windows `.msi`/`.exe`, macOS `.dmg`, Linux `.deb`/`.rpm`) plus an **MSIX package** for the Microsoft Store, and publishes a GitHub release. Release notes link to the changelog; the full history lives in [CHANGELOG.md](CHANGELOG.md).
+Pushing to `main` triggers a GitHub Actions workflow that computes the next version (`YYYY.M.N`), builds the full cross-platform matrix (Windows `.msi`/`.exe`, macOS `.dmg`, Linux `.deb`/`.rpm`) plus an **MSIX package** for the Microsoft Store, and publishes a GitHub release. Once released, a `chore(release)` commit aligns `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json` (and its MSI/WiX version), `src-tauri/Cargo.toml` and `src-tauri/Cargo.lock` on the published version, so the working tree is never behind the latest release. Release notes link to the changelog; the full history lives in [CHANGELOG.md](CHANGELOG.md).
 
 ### License
 
@@ -101,13 +103,15 @@ AGPL-3.0
 - **Soin de l'UI/UX** : barre de titre personnalisée adaptée à chaque plateforme (traffic lights natifs sur macOS, contrôles de fenêtre personnalisés ailleurs), gestion du drag de la fenêtre, menus déroulants avec sous-menus
 - **Internationalisation** : interface entièrement traduite en 4 langues (français, anglais, allemand, espagnol), détection automatique de la langue du système, choix mémorisé, traductions typées vérifiées à la compilation
 - **Thème clair/sombre** : suit la préférence du système en temps réel, via un système de design tokens CSS
-- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (82 tests, Vitest), modèle de permissions de Tauri
+- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (155 tests, Vitest), modèle de permissions de Tauri
 
 ### Fonctionnalités
 
 - **Ouvrir & enregistrer** des fichiers Markdown (`.md`, `.markdown`, `.mdx`) avec les boîtes de dialogue natives
 - **Exporter en PDF** (Fichier → Exporter, `Ctrl/Cmd+E`) : rendu complet avec polices système et images intégrées, dialogue d'enregistrement natif
 - **Trois modes de vue** : Lecture, Édition et Hybride (édition + aperçu en direct côte à côte)
+- **Protection des modifications non enregistrées** : dialogue Enregistrer / Ne pas enregistrer / Annuler avant la fermeture de la fenêtre, la création d'un fichier ou le changement de document
+- **Restauration de session** : au démarrage, réouverture du dernier fichier et dossier, du mode de vue, des panneaux visibles, des dossiers dépliés, de la position de défilement et de la taille/position de la fenêtre
 - **Annuler/Rétablir** avec historique de frappe groupé, **Couper/Copier/Coller** via le presse-papiers natif
 - **4 langues** : Français, English, Deutsch, Español
 - **Thèmes clair & sombre** suivant le système
@@ -162,11 +166,11 @@ npm run tauri:build # Générer un paquet de production (.deb, .AppImage, .msi, 
 
 ### Tests
 
-82 tests unitaires (12 fichiers) couvrant le service document (ouvrir/enregistrer/créer, annuler/rétablir, opérations presse-papiers), le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
+155 tests unitaires (21 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
 
 ### Releases
 
-Pousser sur `main` déclenche un workflow GitHub Actions qui calcule la version suivante (`YYYY.M.N`), construit la matrice multiplateforme complète (`.msi`/`.exe` Windows, `.dmg` macOS, `.deb`/`.rpm` Linux) plus un **paquet MSIX** pour le Microsoft Store, et publie une release GitHub. Les notes de release renvoient vers le changelog ; l'historique complet est dans [CHANGELOG.md](CHANGELOG.md).
+Pousser sur `main` déclenche un workflow GitHub Actions qui calcule la version suivante (`YYYY.M.N`), construit la matrice multiplateforme complète (`.msi`/`.exe` Windows, `.dmg` macOS, `.deb`/`.rpm` Linux) plus un **paquet MSIX** pour le Microsoft Store, et publie une release GitHub. Une fois la release publiée, un commit `chore(release)` aligne `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json` (et sa version MSI/WiX), `src-tauri/Cargo.toml` et `src-tauri/Cargo.lock` sur la version publiée : l'arbre de travail n'est jamais en retard sur la dernière release. Les notes de release renvoient vers le changelog ; l'historique complet est dans [CHANGELOG.md](CHANGELOG.md).
 
 ### Licence
 

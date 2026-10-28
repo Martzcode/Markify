@@ -106,4 +106,42 @@ describe('ExplorerService', () => {
     service.show();
     expect(service.visible()).toBe(true);
   });
+
+  it('restores a folder and its expanded subfolders without a dialog', async () => {
+    vi.mocked(invoke).mockImplementation(async (command: string, args?: unknown) => {
+      const path = (args as { path?: string } | undefined)?.path ?? '';
+      if (path === '/work') {
+        return [{ name: 'sub', path: '/work/sub', isDir: true, children: [] }];
+      }
+      return [{ name: 'notes.md', path: '/work/sub/notes.md', isDir: false, children: [] }];
+    });
+
+    const restored = await service.openFolderAt('/work', ['/work/sub', '/outside']);
+
+    expect(restored).toBe(true);
+    expect(open).not.toHaveBeenCalled();
+    expect(service.rootPath()).toBe('/work');
+    expect(service.expanded().has('/work/sub')).toBe(true);
+    expect(invoke).not.toHaveBeenCalledWith('list_directory', { path: '/outside' });
+  });
+
+  it('reports a folder that can no longer be read', async () => {
+    vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
+
+    await expect(service.openFolderAt('/gone')).resolves.toBe(false);
+
+    expect(service.rootEntries()).toEqual([]);
+  });
+
+  it('resets the explorer state', async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+    await service.openFolderAt('/work');
+    service.show();
+
+    service.reset();
+
+    expect(service.rootPath()).toBeNull();
+    expect(service.visible()).toBe(false);
+    expect(service.expanded()).toEqual(new Set());
+  });
 });

@@ -3,6 +3,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { DocumentService } from '../../services/document.service';
+import { SessionService } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 
 describe('EditorView', () => {
@@ -43,7 +44,10 @@ describe('EditorView', () => {
   });
 
   it('scrolls the textarea to each clicked heading in edit mode', () => {
-    const fixture = createFixture('# Intro\n\nSome text\n\n## Section\n\nMore text\n\n### Sub', 'edit');
+    const fixture = createFixture(
+      '# Intro\n\nSome text\n\n## Section\n\nMore text\n\n### Sub',
+      'edit',
+    );
     const toc = TestBed.inject(TocService);
     const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
     const withMeasure = fixture.componentInstance as unknown as {
@@ -54,8 +58,12 @@ describe('EditorView', () => {
     const scrollLog: number[] = [];
     Object.defineProperty(textarea, 'scrollTop', {
       configurable: true,
-      get() { return scrollLog.length > 0 ? scrollLog[scrollLog.length - 1] : 0; },
-      set(v: number) { scrollLog.push(v); },
+      get() {
+        return scrollLog.length > 0 ? scrollLog[scrollLog.length - 1] : 0;
+      },
+      set(v: number) {
+        scrollLog.push(v);
+      },
     });
     const focus = vi.spyOn(textarea, 'focus');
     const setSelectionRange = vi.spyOn(textarea, 'setSelectionRange');
@@ -79,7 +87,10 @@ describe('EditorView', () => {
   });
 
   it('measures the line offset from the synchronised highlight pre', () => {
-    const fixture = createFixture('# Intro\n\nSome text\n\n## Section\n\nMore text\n\n### Sub', 'edit');
+    const fixture = createFixture(
+      '# Intro\n\nSome text\n\n## Section\n\nMore text\n\n### Sub',
+      'edit',
+    );
     const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
     const highlight = fixture.nativeElement.querySelector('.editor-highlight') as HTMLElement;
 
@@ -122,8 +133,12 @@ describe('EditorView', () => {
     const scrollLog: number[] = [];
     Object.defineProperty(textarea, 'scrollTop', {
       configurable: true,
-      get() { return scrollLog.length > 0 ? scrollLog[scrollLog.length - 1] : 0; },
-      set(v: number) { scrollLog.push(v); },
+      get() {
+        return scrollLog.length > 0 ? scrollLog[scrollLog.length - 1] : 0;
+      },
+      set(v: number) {
+        scrollLog.push(v);
+      },
     });
     const focus = vi.spyOn(textarea, 'focus');
     const setSelectionRange = vi.spyOn(textarea, 'setSelectionRange');
@@ -197,5 +212,62 @@ describe('EditorView', () => {
     link.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
     expect(openUrl).not.toHaveBeenCalled();
+  });
+
+  it('records the editor scroll position for the session', () => {
+    const fixture = createFixture('# Title', 'edit');
+    const session = TestBed.inject(SessionService);
+    const capture = vi.spyOn(session, 'captureScroll');
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    Object.defineProperty(textarea, 'scrollHeight', { configurable: true, value: 1000 });
+    Object.defineProperty(textarea, 'clientHeight', { configurable: true, value: 500 });
+    textarea.scrollTop = 250;
+
+    textarea.dispatchEvent(new Event('scroll'));
+
+    expect(capture).toHaveBeenCalledWith({ editor: 0.5 });
+  });
+
+  it('applies a restored scroll ratio to the editor', () => {
+    const fixture = createFixture('# Title', 'edit');
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    Object.defineProperty(textarea, 'scrollHeight', { configurable: true, value: 1000 });
+    Object.defineProperty(textarea, 'clientHeight', { configurable: true, value: 500 });
+    const withScroll = fixture.componentInstance as unknown as {
+      applyScroll(ratios: { editor: number; preview: number }): void;
+    };
+
+    withScroll.applyScroll({ editor: 0.5, preview: 0 });
+
+    expect(textarea.scrollTop).toBe(250);
+  });
+
+  it('applies the pending scroll once the restored document is rendered', () => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 500,
+    });
+    try {
+      const document = TestBed.inject(DocumentService);
+      const session = TestBed.inject(SessionService);
+      document.setContent('# Title\n\nSome text');
+      document.setMode('edit');
+      session.pendingScroll.set({ editor: 0.5, preview: 0 });
+
+      const fixture = TestBed.createComponent(EditorView);
+      fixture.detectChanges();
+      TestBed.tick();
+
+      const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+      expect(textarea.scrollTop).toBe(250);
+      expect(session.pendingScroll()).toBeNull();
+    } finally {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>)['scrollHeight'];
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
+    }
   });
 });

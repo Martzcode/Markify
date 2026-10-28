@@ -9,6 +9,7 @@ vi.mock('@tauri-apps/api/window', () => {
     setFullscreen: vi.fn().mockResolvedValue(undefined),
     isFullscreen: vi.fn().mockResolvedValue(false),
     onResized: vi.fn().mockResolvedValue(() => {}),
+    onCloseRequested: vi.fn().mockResolvedValue(() => {}),
   };
   return { getCurrentWindow: () => windowMock };
 });

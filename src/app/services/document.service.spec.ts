@@ -6,16 +6,19 @@ import { vi } from 'vitest';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ToastService } from './toast.service';
+import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('DocumentService', () => {
   let service: DocumentService;
   let toast: ToastService;
   let editorRef: EditorRefService;
+  let unsaved: UnsavedChangesService;
 
   beforeEach(() => {
     service = TestBed.inject(DocumentService);
     toast = TestBed.inject(ToastService);
     editorRef = TestBed.inject(EditorRefService);
+    unsaved = TestBed.inject(UnsavedChangesService);
   });
 
   afterEach(() => {
@@ -74,19 +77,107 @@ describe('DocumentService', () => {
     expect(service.filePath()).toBeNull();
   });
 
-  it('creates a new file in edit mode', () => {
+  it('creates a new file in edit mode', async () => {
     service.setContent('old');
     service.filePath.set('/tmp/old.md');
     service.isOpen.set(true);
     service.setMode('read');
-    service.isDirty.set(true);
+    service.isDirty.set(false);
 
-    service.newFile();
+    await service.newFile();
 
     expect(service.content()).toBe('');
     expect(service.filePath()).toBeNull();
     expect(service.isOpen()).toBe(true);
     expect(service.mode()).toBe('edit');
+    expect(service.isDirty()).toBe(false);
+  });
+
+  it('keeps the document when the user cancels the unsaved-changes dialog', async () => {
+    service.setContent('draft');
+    service.isOpen.set(true);
+
+    const pending = service.newFile();
+    expect(unsaved.isOpen()).toBe(true);
+    unsaved.resolve('cancel');
+
+    await expect(pending).resolves.toBe(false);
+    expect(service.content()).toBe('draft');
+    expect(service.isDirty()).toBe(true);
+  });
+
+  it('discards changes when the user confirms', async () => {
+    service.setContent('draft');
+    service.filePath.set('/tmp/draft.md');
+    service.isOpen.set(true);
+
+    const pending = service.newFile();
+    unsaved.resolve('discard');
+
+    await expect(pending).resolves.toBe(true);
+    expect(service.content()).toBe('');
+    expect(service.filePath()).toBeNull();
+    expect(service.isDirty()).toBe(false);
+  });
+
+  it('saves changes before switching to a new file', async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+    service.setContent('draft');
+    service.filePath.set('/tmp/draft.md');
+    service.isOpen.set(true);
+
+    const pending = service.newFile();
+    unsaved.resolve('save');
+
+    await expect(pending).resolves.toBe(true);
+    expect(invoke).toHaveBeenCalledWith('write_markdown_file', {
+      path: '/tmp/draft.md',
+      content: 'draft',
+    });
+    expect(service.content()).toBe('');
+  });
+
+  it('does not open a file when saving is cancelled from the guard', async () => {
+    vi.mocked(save).mockResolvedValue(null);
+    service.setContent('draft');
+    service.isOpen.set(true);
+
+    const pending = service.openFile();
+    unsaved.resolve('save');
+
+    await expect(pending).resolves.toBe(false);
+    expect(open).not.toHaveBeenCalled();
+    expect(service.content()).toBe('draft');
+  });
+
+  it('guards opening a file from the explorer', async () => {
+    vi.mocked(invoke).mockResolvedValue('# Other');
+    service.setContent('draft');
+    service.isOpen.set(true);
+
+    const pending = service.openPath('/tmp/other.md');
+    unsaved.resolve('discard');
+
+    await expect(pending).resolves.toBe(true);
+    expect(service.content()).toBe('# Other');
+    expect(service.filePath()).toBe('/tmp/other.md');
+  });
+
+  it('does not ask for confirmation when the document is clean', async () => {
+    await expect(service.confirmDiscardChanges()).resolves.toBe(true);
+    expect(unsaved.isOpen()).toBe(false);
+  });
+
+  it('restores a path without showing the unsaved-changes dialog', async () => {
+    vi.mocked(invoke).mockResolvedValue('# Restored');
+    service.setContent('draft');
+    service.isOpen.set(true);
+
+    await expect(service.restorePath('/tmp/restored.md')).resolves.toBe(true);
+
+    expect(unsaved.isOpen()).toBe(false);
+    expect(service.content()).toBe('# Restored');
+    expect(service.filePath()).toBe('/tmp/restored.md');
     expect(service.isDirty()).toBe(false);
   });
 

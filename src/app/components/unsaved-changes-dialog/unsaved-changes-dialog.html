@@ -1,0 +1,31 @@
+<div class="unsaved-backdrop" (click)="cancel()">
+  <div
+    class="unsaved-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="unsaved-title"
+    aria-describedby="unsaved-message"
+    (click)="$event.stopPropagation()"
+  >
+    <h2 id="unsaved-title" class="unsaved-title">{{ i18n.t('unsaved.title') }}</h2>
+    <p id="unsaved-message" class="unsaved-message">
+      {{ i18n.t('unsaved.message', { name: fileName() }) }}
+    </p>
+    <div class="unsaved-actions">
+      <button type="button" class="unsaved-button" (click)="cancel()">
+        {{ i18n.t('unsaved.cancel') }}
+      </button>
+      <button type="button" class="unsaved-button unsaved-button-danger" (click)="discard()">
+        {{ i18n.t('unsaved.discard') }}
+      </button>
+      <button
+        #saveButton
+        type="button"
+        class="unsaved-button unsaved-button-primary"
+        (click)="save()"
+      >
+        {{ i18n.t('unsaved.save') }}
+      </button>
+    </div>
+  </div>
+</div>

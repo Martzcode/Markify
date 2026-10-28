@@ -5,6 +5,19 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.2] - 2026-10-28
+
+### Ajouté
+
+- Protection contre la perte de modifications non enregistrées : un dialogue **Enregistrer / Ne pas enregistrer / Annuler** s'affiche avant de créer un nouveau document, d'en ouvrir un autre, de cliquer sur un fichier dans l'explorateur ou de fermer la fenêtre (croix, `Alt+F4`, menu Quitter).
+- Interception de la fermeture de fenêtre via `onCloseRequested` (Tauri) : la fenêtre reste ouverte si l'utilisateur annule, et se ferme après enregistrement ou perte confirmée.
+- **Restauration de session** : au démarrage, Markify rouvre le dernier fichier et dossier, réapplique le mode de vue, les panneaux visibles, les dossiers dépliés et la position de défilement, et restaure la taille, la position et l'état maximisé de la fenêtre (plugin Tauri `window-state`).
+- Si le fichier ou le dossier de la dernière session n'existe plus, l'application démarre proprement (toast d'avertissement pour le fichier) au lieu d'échouer.
+
+### Amélioré
+
+- `DocumentService.saveFile()` et les actions d'ouverture renvoient désormais un booléen indiquant si l'opération a abouti, ce qui permet d'interrompre proprement les actions en cours lorsqu'un enregistrement est annulé ou échoue.
+
 ## [2026.10.1] - 2026-10-17
 
 ### Amélioré

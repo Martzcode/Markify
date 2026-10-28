@@ -66,6 +66,43 @@ export class ExplorerService {
     await this.loadRoot(norm(path));
   }
 
+  /**
+   * Charge un dossier sans boîte de dialogue puis réapplique les dossiers
+   * dépliés. Utilisé par la restauration de session au démarrage.
+   *
+   * @returns `false` si le dossier n'existe plus ou n'est pas lisible.
+   */
+  async openFolderAt(path: string, expandedPaths: readonly string[] = []): Promise<boolean> {
+    const root = norm(path);
+    if (!(await this.loadRoot(root))) {
+      return false;
+    }
+    for (const dir of expandedPaths) {
+      const n = norm(dir);
+      if (n === root || !n.startsWith(root + '/')) {
+        continue;
+      }
+      try {
+        await this.expandAncestors(n);
+      } catch {
+        // Dossier supprimé ou inaccessible depuis la dernière session.
+      }
+    }
+    return true;
+  }
+
+  /** Ferme le dossier courant et vide l'arborescence. */
+  reset(): void {
+    this.visible.set(false);
+    this.rootPath.set(null);
+    this.rootEntries.set([]);
+    this.expanded.set(new Set());
+    this.selectedPath.set(null);
+    this.loading.set(false);
+    this.error.set(null);
+    this.childrenCache.clear();
+  }
+
   async revealFile(filePath: string): Promise<void> {
     const path = norm(filePath);
     const dir = parentDir(path);
@@ -121,7 +158,7 @@ export class ExplorerService {
     this.injector.get(TocService, undefined, { optional: true })?.hide();
   }
 
-  private async loadRoot(dir: string): Promise<void> {
+  private async loadRoot(dir: string): Promise<boolean> {
     this.rootPath.set(dir);
     this.loading.set(true);
     this.error.set(null);
@@ -130,9 +167,11 @@ export class ExplorerService {
     try {
       const entries = await invoke<ExplorerEntry[]>('list_directory', { path: dir });
       this.rootEntries.set(entries);
+      return true;
     } catch (err) {
       this.error.set(String(err));
       this.rootEntries.set([]);
+      return false;
     } finally {
       this.loading.set(false);
     }

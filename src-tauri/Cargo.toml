@@ -1,6 +1,6 @@
 [package]
 name = "markify"
-version = "0.1.0"
+version = "2026.10.1"
 description = "Markify - Markdown editor"
 authors = ["Marcello-calyps"]
 license = "AGPL-3.0"
@@ -29,6 +29,7 @@ tauri-plugin-http = "2"
 tauri-plugin-log = "2"
 fontdue = "0.9.4"
 tauri-plugin-opener = "2.5.4"
+tauri-plugin-window-state = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"

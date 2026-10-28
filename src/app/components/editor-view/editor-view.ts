@@ -4,6 +4,8 @@ import {
   effect,
   ElementRef,
   HostListener,
+  Injector,
+  afterNextRender,
   inject,
   viewChild,
 } from '@angular/core';
@@ -13,9 +15,20 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { SessionService, type ScrollRatios } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
 import { renderMarkdown } from '../../utils/markdown-render';
+
+/** Position verticale relative d'une zone défilante, entre 0 et 1. */
+function scrollRatio(element: {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+}): number {
+  const max = element.scrollHeight - element.clientHeight;
+  return max > 0 ? Math.min(1, Math.max(0, element.scrollTop / max)) : 0;
+}
 
 @Component({
   selector: 'app-editor-view',
@@ -28,6 +41,8 @@ export class EditorView {
   private readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = inject(TocService);
+  private readonly session = inject(SessionService);
+  private readonly injector = inject(Injector);
   private readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('input');
   private readonly highlightEl = viewChild<ElementRef<HTMLElement>>('highlight');
   private readonly previewEl = viewChild<ElementRef<HTMLElement>>('preview');
@@ -63,6 +78,34 @@ export class EditorView {
         this.scrollTextareaToHeading(id);
       }
     });
+    effect(() => {
+      const pending = this.session.pendingScroll();
+      if (!pending) {
+        return;
+      }
+      afterNextRender(
+        () => {
+          this.applyScroll(pending);
+          this.session.clearPendingScroll();
+        },
+        { injector: this.injector },
+      );
+    });
+  }
+
+  /** Applique le défilement restauré une fois le contenu rendu. */
+  private applyScroll(ratios: ScrollRatios): void {
+    const input = this.inputEl()?.nativeElement;
+    if (input) {
+      const max = Math.max(0, input.scrollHeight - input.clientHeight);
+      input.scrollTop = Math.round(ratios.editor * max);
+      this.syncHighlightScroll();
+    }
+    const preview = this.previewEl()?.nativeElement;
+    if (preview) {
+      const max = Math.max(0, preview.scrollHeight - preview.clientHeight);
+      preview.scrollTop = Math.round(ratios.preview * max);
+    }
   }
 
   private tocTarget(id: string): HTMLElement | null {
@@ -127,8 +170,15 @@ export class EditorView {
     this.document.setContent(target.value);
   }
 
-  protected onScroll(): void {
+  protected onScroll(event: Event): void {
     this.syncHighlightScroll();
+    const input = event.target as HTMLTextAreaElement;
+    this.session.captureScroll({ editor: scrollRatio(input) });
+  }
+
+  protected onPreviewScroll(event: Event): void {
+    const preview = event.target as HTMLElement;
+    this.session.captureScroll({ preview: scrollRatio(preview) });
   }
 
   @HostListener('click', ['$event'])

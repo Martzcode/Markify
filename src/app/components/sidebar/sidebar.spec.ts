@@ -63,7 +63,7 @@ describe('Sidebar', () => {
     fixture.detectChanges();
 
     const docService = TestBed.inject(DocumentService);
-    const openPath = vi.spyOn(docService, 'openPath').mockResolvedValue();
+    const openPath = vi.spyOn(docService, 'openPath').mockResolvedValue(true);
 
     const node = (fixture.nativeElement as HTMLElement).querySelector('.node') as HTMLElement;
     node.click();

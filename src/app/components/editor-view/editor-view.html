@@ -15,12 +15,17 @@
         class="editor-input"
         [value]="document.content()"
         (input)="onInput($event)"
-        (scroll)="onScroll()"
+        (scroll)="onScroll($event)"
         spellcheck="false"
       ></textarea>
     </div>
   }
   @if (document.mode() === 'read' || document.mode() === 'hybrid') {
-    <div #preview class="editor-preview markdown-body" [innerHTML]="renderedHtml()"></div>
+    <div
+      #preview
+      class="editor-preview markdown-body"
+      (scroll)="onPreviewScroll($event)"
+      [innerHTML]="renderedHtml()"
+    ></div>
   }
 </div>
