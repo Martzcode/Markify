@@ -56,6 +56,12 @@ export class App {
       }
     });
     effect(() => {
+      // Fermer le document masque la table des matières, qui n'a plus d'objet.
+      if (!this.document.isOpen()) {
+        this.toc.hide();
+      }
+    });
+    effect(() => {
       // Toute modification de l'état de travail est persistée (debounce).
       this.document.filePath();
       this.document.mode();

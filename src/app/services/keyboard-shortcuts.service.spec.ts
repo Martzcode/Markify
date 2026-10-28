@@ -54,6 +54,21 @@ describe('KeyboardShortcutsService', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('closes the document with Ctrl+W', () => {
+    documentService.isOpen.set(true);
+    const spy = vi.spyOn(documentService, 'closeFile').mockResolvedValue(true);
+
+    expect(keydown('w', { ctrlKey: true })).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores Ctrl+W when no document is open', () => {
+    const spy = vi.spyOn(documentService, 'closeFile').mockResolvedValue(true);
+
+    expect(keydown('w', { ctrlKey: true })).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it('toggles the explorer with Ctrl+B', () => {
     const explorer = TestBed.inject(ExplorerService);
     const spy = vi.spyOn(explorer, 'toggle');

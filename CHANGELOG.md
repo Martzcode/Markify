@@ -5,6 +5,12 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.4] - 2026-10-28
+
+### Ajouté
+
+- **Fermer le document courant** sans fermer la fenêtre, via l'entrée de menu **Fichier → Fermer le document** et le raccourci `Ctrl+W` (`Cmd+W` sur macOS). Le garde-fou des modifications non enregistrées s'applique comme pour les autres actions ; Markify revient à l'écran d'accueil et masque la table des matières.
+
 ## [2026.10.3] - 2026-10-28
 
 ### Corrigé

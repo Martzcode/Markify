@@ -43,12 +43,28 @@ export class DocumentService {
   }
 
   private resetDocument(): void {
+    this.clearDocument(true, 'edit');
+  }
+
+  /**
+   * Ferme le document courant et revient à l'écran d'accueil sans fermer la
+   * fenêtre. Passe par le garde-fou des modifications (F-01).
+   */
+  async closeFile(): Promise<boolean> {
+    if (!(await this.confirmDiscardChanges())) {
+      return false;
+    }
+    this.clearDocument(false, 'read');
+    return true;
+  }
+
+  private clearDocument(isOpen: boolean, mode: EditorMode): void {
     this.error.set(null);
     this.content.set('');
     this.filePath.set(null);
-    this.isOpen.set(true);
+    this.isOpen.set(isOpen);
     this.isDirty.set(false);
-    this.mode.set('edit');
+    this.mode.set(mode);
     this.resetHistory();
   }
 

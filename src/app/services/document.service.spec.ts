@@ -120,6 +120,52 @@ describe('DocumentService', () => {
     expect(service.isDirty()).toBe(false);
   });
 
+  it('closes the current document without closing the window', async () => {
+    service.setContent('# Hello');
+    service.filePath.set('/tmp/hello.md');
+    service.isOpen.set(true);
+    service.setMode('read');
+    service.isDirty.set(false);
+
+    await expect(service.closeFile()).resolves.toBe(true);
+
+    expect(unsaved.isOpen()).toBe(false);
+    expect(service.isOpen()).toBe(false);
+    expect(service.filePath()).toBeNull();
+    expect(service.content()).toBe('');
+    expect(service.mode()).toBe('read');
+    expect(service.isDirty()).toBe(false);
+  });
+
+  it('keeps the document open when closing is cancelled', async () => {
+    service.setContent('draft');
+    service.filePath.set('/tmp/draft.md');
+    service.isOpen.set(true);
+
+    const pending = service.closeFile();
+    expect(unsaved.isOpen()).toBe(true);
+    unsaved.resolve('cancel');
+
+    await expect(pending).resolves.toBe(false);
+    expect(service.isOpen()).toBe(true);
+    expect(service.content()).toBe('draft');
+  });
+
+  it('closes the document after discarding unsaved changes', async () => {
+    service.setContent('draft');
+    service.filePath.set('/tmp/draft.md');
+    service.isOpen.set(true);
+
+    const pending = service.closeFile();
+    unsaved.resolve('discard');
+
+    await expect(pending).resolves.toBe(true);
+    expect(service.isOpen()).toBe(false);
+    expect(service.filePath()).toBeNull();
+    expect(service.content()).toBe('');
+    expect(service.canUndo()).toBe(false);
+  });
+
   it('saves changes before switching to a new file', async () => {
     vi.mocked(invoke).mockResolvedValue(undefined);
     service.setContent('draft');

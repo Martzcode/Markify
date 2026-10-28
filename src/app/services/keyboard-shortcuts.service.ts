@@ -45,6 +45,12 @@ export class KeyboardShortcutsService implements OnDestroy {
             void this.document.openFile();
           }
           return;
+        case 'w':
+          if (this.document.isOpen()) {
+            event.preventDefault();
+            void this.document.closeFile();
+          }
+          return;
         case 'b':
           event.preventDefault();
           this.explorer.toggle();

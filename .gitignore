@@ -41,8 +41,8 @@ __screenshots__/
 test.md
 /RELEASE.md
 
-# Microsoft Store listing
-/store-listing/
+# Documentation
+/docs/
 
 # System files
 .DS_Store
