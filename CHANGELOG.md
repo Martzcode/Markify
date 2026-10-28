@@ -5,6 +5,12 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.3] - 2026-10-28
+
+### Corrigé
+
+- Fenêtre qui rétrécissait légèrement à chaque ouverture sur Linux (GTK/Wayland) : la taille restaurée par le plugin `window-state` était appliquée avant l'affichage de la fenêtre, si bien que GTK la réduisait de l'épaisseur de son ombre à chaque lancement. La taille est désormais mémorisée dans la session et réappliquée une fois la fenêtre affichée, ce qui la stabilise d'un lancement à l'autre.
+
 ## [2026.10.2] - 2026-10-28
 
 ### Ajouté

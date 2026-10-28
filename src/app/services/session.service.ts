@@ -1,4 +1,6 @@
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { PhysicalSize } from '@tauri-apps/api/dpi';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { I18nService } from '../i18n/i18n.service';
 import { DocumentService, type EditorMode } from './document.service';
 import { ExplorerService } from './explorer.service';
@@ -17,6 +19,12 @@ export interface ScrollRatios {
   preview: number;
 }
 
+/** Taille intérieure de la fenêtre, en pixels physiques. */
+export interface WindowSize {
+  width: number;
+  height: number;
+}
+
 export interface SessionState {
   version: number;
   filePath: string | null;
@@ -26,6 +34,7 @@ export interface SessionState {
   tocVisible: boolean;
   expandedPaths: string[];
   scroll: ScrollRatios;
+  window: WindowSize | null;
 }
 
 const MODES: readonly EditorMode[] = ['read', 'edit', 'hybrid'];
@@ -42,6 +51,20 @@ function ratio(value: unknown): number {
   return Math.min(1, Math.max(0, value));
 }
 
+function validWindowSize(value: unknown): WindowSize | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const { width, height } = value as Partial<WindowSize>;
+  if (typeof width !== 'number' || typeof height !== 'number') {
+    return null;
+  }
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+  return { width: Math.round(width), height: Math.round(height) };
+}
+
 function basename(path: string): string {
   const parts = path.split(/[\\/]/);
   return parts[parts.length - 1] || path;
@@ -49,11 +72,13 @@ function basename(path: string): string {
 
 /**
  * Restaure et persiste l'état de travail entre deux lancements : dernier
- * fichier/dossier, mode de vue, panneaux visibles, dossiers dépliés et
- * position de défilement.
+ * fichier/dossier, mode de vue, panneaux visibles, dossiers dépliés,
+ * position de défilement et taille de la fenêtre.
  *
- * La géométrie de la fenêtre est gérée nativement par le plugin Tauri
- * `window-state` ; ce service ne s'occupe que de l'état applicatif.
+ * La position et l'état maximisé de la fenêtre sont gérés par le plugin Tauri
+ * `window-state`. La taille, elle, est réappliquée ici : sur Linux/Wayland, le
+ * plugin restaure la taille avant que la fenêtre ne soit affichée et GTK la
+ * réduit alors de l'épaisseur de son ombre à chaque lancement.
  */
 @Injectable({ providedIn: 'root' })
 export class SessionService implements OnDestroy {
@@ -62,13 +87,18 @@ export class SessionService implements OnDestroy {
   private readonly toc = inject(TocService);
   private readonly toast = inject(ToastService);
   private readonly i18n = inject(I18nService);
+  private readonly win = getCurrentWindow();
 
   /** Défilement à appliquer une fois le document restauré rendu. */
   readonly pendingScroll = signal<ScrollRatios | null>(null);
 
   private scroll: ScrollRatios = { ...DEFAULT_SCROLL };
+  private windowSize: WindowSize | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private unlistenResize: (() => void) | null = null;
+  private applyingSize = false;
   private ready = false;
+  private destroyed = false;
 
   private readonly onBeforeUnload = () => this.flush();
 
@@ -77,6 +107,9 @@ export class SessionService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.unlistenResize?.();
+    this.unlistenResize = null;
     window.removeEventListener('beforeunload', this.onBeforeUnload);
     this.flush();
   }
@@ -89,9 +122,13 @@ export class SessionService implements OnDestroy {
     try {
       const state = this.read();
       if (!state) {
+        await this.captureInitialSize();
+        this.startTracking();
         return;
       }
       this.scroll = state.scroll;
+      this.windowSize = state.window;
+      await this.applyWindowSize(state.window);
 
       if (
         state.folderPath &&
@@ -116,10 +153,84 @@ export class SessionService implements OnDestroy {
       } else if (state.tocVisible) {
         this.toc.show();
       }
+
+      if (this.windowSize === null) {
+        await this.captureInitialSize();
+      }
+      this.startTracking();
     } finally {
       this.ready = true;
       this.save();
     }
+  }
+
+  /**
+   * Réapplique la taille mémorisée une fois la fenêtre affichée. Sans cela,
+   * la restauration du plugin `window-state` se fait trop tôt sous
+   * Linux/Wayland et la fenêtre rétrécit de l'épaisseur de son ombre à chaque
+   * lancement.
+   */
+  private async applyWindowSize(size: WindowSize | null): Promise<void> {
+    if (size === null) {
+      return;
+    }
+    try {
+      if (await this.win.isMaximized()) {
+        return;
+      }
+      this.applyingSize = true;
+      await this.win.setSize(new PhysicalSize(size.width, size.height));
+    } catch {
+      // Permission refusée ou fenêtre indisponible : la taille par défaut reste.
+    } finally {
+      this.applyingSize = false;
+    }
+  }
+
+  /** Mémorise la taille courante lors du premier lancement. */
+  private async captureInitialSize(): Promise<void> {
+    try {
+      const size = await this.win.innerSize();
+      if (size.width > 0 && size.height > 0) {
+        this.windowSize = { width: size.width, height: size.height };
+      }
+    } catch {
+      // Taille indisponible : rien à mémoriser.
+    }
+  }
+
+  private startTracking(): void {
+    if (this.unlistenResize !== null) {
+      return;
+    }
+    void this.win
+      .onResized((event) => this.onResized(event.payload))
+      .then((unlisten) => {
+        if (this.destroyed) {
+          unlisten();
+        } else {
+          this.unlistenResize = unlisten;
+        }
+      })
+      .catch(() => {
+        // Pas d'écouteur : la taille reste celle du dernier enregistrement.
+      });
+  }
+
+  private async onResized(size: PhysicalSize): Promise<void> {
+    if (this.applyingSize || size.width <= 0 || size.height <= 0) {
+      return;
+    }
+    try {
+      // La taille d'une fenêtre maximisée n'est pas celle à restaurer.
+      if (await this.win.isMaximized()) {
+        return;
+      }
+    } catch {
+      return;
+    }
+    this.windowSize = { width: size.width, height: size.height };
+    this.scheduleSave();
   }
 
   /** Programme une sauvegarde différée (les changements arrivent en rafale). */
@@ -180,6 +291,7 @@ export class SessionService implements OnDestroy {
       tocVisible: this.toc.visible(),
       expandedPaths: [...this.explorer.expanded()],
       scroll: this.scroll,
+      window: this.windowSize,
     };
   }
 
@@ -212,6 +324,7 @@ export class SessionService implements OnDestroy {
           editor: ratio(data.scroll?.editor),
           preview: ratio(data.scroll?.preview),
         },
+        window: validWindowSize(data.window),
       };
     } catch {
       return null;

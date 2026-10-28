@@ -20,7 +20,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **UI/UX craft**: custom title bar adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
 - **Internationalization**: UI fully translated into 4 languages (French, English, German, Spanish), automatic detection of the system language, persisted choice, type-safe translations verified at compile time
 - **Theming**: light/dark themes that follow the system preference in real time, through a CSS design-token system
-- **Software engineering practices**: service architecture with Angular Signals, unit testing (155 tests, Vitest), Tauri capability permissions model
+- **Software engineering practices**: service architecture with Angular Signals, unit testing (160 tests, Vitest), Tauri capability permissions model
 
 ### Features
 
@@ -83,7 +83,7 @@ npm run tauri:build # Build a production bundle (.deb, .AppImage, .msi, .msix, .
 
 ### Testing
 
-155 unit tests (21 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
+160 unit tests (21 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
 
 ### Releases
 
@@ -103,7 +103,7 @@ AGPL-3.0
 - **Soin de l'UI/UX** : barre de titre personnalisée adaptée à chaque plateforme (traffic lights natifs sur macOS, contrôles de fenêtre personnalisés ailleurs), gestion du drag de la fenêtre, menus déroulants avec sous-menus
 - **Internationalisation** : interface entièrement traduite en 4 langues (français, anglais, allemand, espagnol), détection automatique de la langue du système, choix mémorisé, traductions typées vérifiées à la compilation
 - **Thème clair/sombre** : suit la préférence du système en temps réel, via un système de design tokens CSS
-- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (155 tests, Vitest), modèle de permissions de Tauri
+- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (160 tests, Vitest), modèle de permissions de Tauri
 
 ### Fonctionnalités
 
@@ -166,7 +166,7 @@ npm run tauri:build # Générer un paquet de production (.deb, .AppImage, .msi, 
 
 ### Tests
 
-155 tests unitaires (21 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
+160 tests unitaires (21 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
 
 ### Releases
 

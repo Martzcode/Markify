@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { invoke } from '@tauri-apps/api/core';
+import { PhysicalSize } from '@tauri-apps/api/dpi';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { vi } from 'vitest';
 import { DocumentService } from './document.service';
 import { ExplorerService } from './explorer.service';
@@ -176,6 +178,64 @@ describe('SessionService', () => {
     session.flush();
 
     expect(readSaved()?.mode).toBe('edit');
+  });
+
+  it('reapplies the saved window size once the window is shown', async () => {
+    const win = getCurrentWindow();
+    vi.mocked(win.isMaximized).mockResolvedValueOnce(false);
+    seed({ window: { width: 1000, height: 700 } });
+
+    await session.restore();
+
+    expect(win.setSize).toHaveBeenCalledWith(expect.objectContaining({ width: 1000, height: 700 }));
+  });
+
+  it('leaves a maximized window alone', async () => {
+    const win = getCurrentWindow();
+    vi.mocked(win.isMaximized).mockResolvedValueOnce(true);
+    seed({ window: { width: 1000, height: 700 } });
+
+    await session.restore();
+
+    expect(win.setSize).not.toHaveBeenCalled();
+  });
+
+  it('remembers the initial window size on the first launch', async () => {
+    const win = getCurrentWindow();
+    vi.mocked(win.innerSize).mockResolvedValueOnce(new PhysicalSize(1024, 768));
+
+    await session.restore();
+
+    expect(readSaved()?.window).toEqual({ width: 1024, height: 768 });
+  });
+
+  it('stores the size when the window is resized', async () => {
+    vi.useFakeTimers();
+    const win = getCurrentWindow();
+    await session.restore();
+    const listener = vi.mocked(win.onResized).mock.calls[0]?.[0] as unknown as (event: {
+      payload: PhysicalSize;
+    }) => Promise<void>;
+
+    await listener({ payload: new PhysicalSize(900, 620) });
+    vi.advanceTimersByTime(600);
+
+    expect(readSaved()?.window).toEqual({ width: 900, height: 620 });
+  });
+
+  it('ignores resizes while the window is maximized', async () => {
+    vi.useFakeTimers();
+    const win = getCurrentWindow();
+    await session.restore();
+    const listener = vi.mocked(win.onResized).mock.calls[0]?.[0] as unknown as (event: {
+      payload: PhysicalSize;
+    }) => Promise<void>;
+    vi.mocked(win.isMaximized).mockResolvedValueOnce(true);
+
+    await listener({ payload: new PhysicalSize(1920, 1080) });
+    vi.advanceTimersByTime(600);
+
+    expect(readSaved()?.window).toEqual({ width: 1200, height: 800 });
   });
 
   it('stores scroll positions without writing on every event', async () => {
