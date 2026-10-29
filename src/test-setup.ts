@@ -12,12 +12,14 @@ vi.mock('@tauri-apps/api/window', () => {
     setSize: vi.fn().mockResolvedValue(undefined),
     onResized: vi.fn().mockResolvedValue(() => {}),
     onCloseRequested: vi.fn().mockResolvedValue(() => {}),
+    onDragDropEvent: vi.fn().mockResolvedValue(() => {}),
   };
   return { getCurrentWindow: () => windowMock };
 });
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
+  convertFileSrc: vi.fn((path: string) => `asset://localhost/${encodeURIComponent(path)}`),
 }));
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
@@ -28,6 +30,7 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
   writeText: vi.fn(),
   readText: vi.fn(),
+  readImage: vi.fn(),
 }));
 
 vi.mock('@tauri-apps/plugin-opener', () => ({

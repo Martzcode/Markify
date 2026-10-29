@@ -4,10 +4,12 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { I18nService } from '../i18n/i18n.service';
 import { EditorRefService } from './editor-ref.service';
+import { ImageService } from './image.service';
 import { SecurityService } from './security.service';
 import { ToastService } from './toast.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 import { generatePdf } from '../utils/pdf-export';
+import { imageAltFromPath, isImagePath } from '../utils/image-path';
 import { renderMarkdownPlain } from '../utils/markdown-render';
 
 export type EditorMode = 'read' | 'edit' | 'hybrid';
@@ -35,6 +37,16 @@ function copyPath(path: string, suffix: string): string {
   return `${dir}${base.slice(0, dot)}-${suffix}${base.slice(dot)}`;
 }
 
+/** Échappe le texte alternatif pour qu'il ne ferme pas le lien Markdown. */
+function escapeAltText(value: string): string {
+  return value.replace(/[\\[\]]/g, '\\$&').replace(/\r?\n/g, ' ');
+}
+
+interface ImageInsertion {
+  src: string;
+  alt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly i18n = inject(I18nService);
@@ -42,6 +54,7 @@ export class DocumentService {
   private readonly security = inject(SecurityService);
   private readonly editorRef = inject(EditorRefService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+  private readonly image = inject(ImageService);
 
   readonly content = signal('');
   readonly filePath = signal<string | null>(null);
@@ -357,10 +370,164 @@ export class DocumentService {
     if (!textarea) {
       return;
     }
+    const clipboardImage = await this.image.readClipboardImage();
+    if (clipboardImage) {
+      await this.insertImageBytes(clipboardImage.bytes, clipboardImage.fileName);
+      return;
+    }
     const { selectionStart: start, selectionEnd: end } = textarea;
     const text = await readText();
     this.setContent(this.content().slice(0, start) + text + this.content().slice(end));
     this.restoreSelection(textarea, start + text.length, start + text.length);
+  }
+
+  /** Ouvre le sélecteur de fichiers puis insère l'image choisie. */
+  async insertImageFromDialog(): Promise<void> {
+    this.error.set(null);
+    if (!this.isOpen()) {
+      this.toast.show(this.i18n.t('toast.imageNeedsDocument'));
+      return;
+    }
+    const selected = await open({
+      title: this.i18n.t('dialog.image.title'),
+      multiple: false,
+      filters: [
+        {
+          name: this.i18n.t('dialog.image.filter'),
+          extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif', 'ico'],
+        },
+      ],
+    });
+    if (typeof selected !== 'string') {
+      return;
+    }
+    await this.importImagePaths([selected]);
+  }
+
+  /** Copie des fichiers image (glisser-déposer natif) dans `./assets`. */
+  async importImagePaths(paths: readonly string[]): Promise<void> {
+    const documentPath = await this.ensureImageTarget();
+    if (!documentPath) {
+      return;
+    }
+    const images: ImageInsertion[] = [];
+    let failed = 0;
+    for (const sourcePath of paths) {
+      if (!isImagePath(sourcePath)) {
+        continue;
+      }
+      try {
+        const link = await this.image.saveImageFromPath(sourcePath, documentPath);
+        images.push({ src: link, alt: imageAltFromPath(sourcePath) });
+      } catch {
+        failed++;
+      }
+    }
+    this.finishImageInsertion(images, failed);
+  }
+
+  /** Copie des fichiers image (glisser-déposer HTML5) dans `./assets`. */
+  async importImageFiles(files: readonly File[]): Promise<void> {
+    const documentPath = await this.ensureImageTarget();
+    if (!documentPath) {
+      return;
+    }
+    const images: ImageInsertion[] = [];
+    let failed = 0;
+    for (const file of files) {
+      if (!file.type.startsWith('image/') && !isImagePath(file.name)) {
+        continue;
+      }
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const name = file.name || 'image.png';
+        const link = await this.image.saveImage(bytes, name, documentPath);
+        images.push({ src: link, alt: imageAltFromPath(name) });
+      } catch {
+        failed++;
+      }
+    }
+    this.finishImageInsertion(images, failed);
+  }
+
+  /** Enregistre des octets d'image puis insère le lien Markdown. */
+  async insertImageBytes(bytes: Uint8Array, fileName: string): Promise<void> {
+    const documentPath = await this.ensureImageTarget();
+    if (!documentPath) {
+      return;
+    }
+    try {
+      const link = await this.image.saveImage(bytes, fileName, documentPath);
+      this.insertImageMarkdown([{ src: link, alt: imageAltFromPath(fileName) }]);
+      this.toast.show(this.i18n.t('toast.imageInserted'));
+    } catch (err) {
+      this.error.set(String(err));
+      this.toast.show(this.i18n.t('toast.imageInsertFailed'));
+    }
+  }
+
+  private finishImageInsertion(images: ImageInsertion[], failed: number): void {
+    if (images.length === 0) {
+      if (failed > 0) {
+        this.toast.show(this.i18n.t('toast.imageInsertFailed'));
+      }
+      return;
+    }
+    this.insertImageMarkdown(images);
+    this.toast.show(
+      this.i18n.t(images.length === 1 ? 'toast.imageInserted' : 'toast.imagesInserted', {
+        count: String(images.length),
+      }),
+    );
+  }
+
+  /**
+   * Les images sont enregistrées à côté du document : un document jamais
+   * enregistré doit d'abord recevoir un chemin.
+   */
+  private async ensureImageTarget(): Promise<string | null> {
+    if (!this.isOpen()) {
+      this.toast.show(this.i18n.t('toast.imageNeedsDocument'));
+      return null;
+    }
+    if (!this.filePath()) {
+      if (!(await this.saveFile())) {
+        return null;
+      }
+    }
+    return this.filePath();
+  }
+
+  private insertImageMarkdown(images: readonly ImageInsertion[]): void {
+    if (images.length === 0) {
+      return;
+    }
+    if (this.mode() === 'read') {
+      this.setMode('edit');
+    }
+    const fallbackAlt = this.i18n.t('image.defaultAlt');
+    const markdown = images
+      .map(({ src, alt }) => `![${escapeAltText(alt || fallbackAlt)}](${src})`)
+      .join('\n\n');
+    this.insertBlock(markdown);
+  }
+
+  /** Insère un bloc au curseur, avec les lignes vides nécessaires autour. */
+  private insertBlock(markdown: string): void {
+    const textarea = this.editorRef.textarea();
+    const content = this.content();
+    const start = textarea?.selectionStart ?? content.length;
+    const end = textarea?.selectionEnd ?? content.length;
+    const before = content.slice(0, start);
+    const after = content.slice(end);
+    const prefix =
+      before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+    const suffix =
+      after === '' || after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+    const inserted = `${prefix}${markdown}${suffix}`;
+    this.setContent(before + inserted + after);
+    const caret = start + inserted.length;
+    this.restoreSelection(textarea, caret, caret);
   }
 
   private commitHistory(previous: string): void {
@@ -388,7 +555,10 @@ export class DocumentService {
     this.lastEditAt = null;
   }
 
-  private restoreSelection(textarea: HTMLTextAreaElement, start: number, end: number): void {
+  private restoreSelection(textarea: HTMLTextAreaElement | null, start: number, end: number): void {
+    if (!textarea) {
+      return;
+    }
     setTimeout(() => {
       try {
         textarea.setSelectionRange(start, end);

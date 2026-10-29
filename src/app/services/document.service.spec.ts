@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { I18nService } from '../i18n/i18n.service';
 import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
+import { ImageService } from './image.service';
 import { ToastService } from './toast.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
@@ -563,6 +564,146 @@ describe('DocumentService', () => {
     await service.pasteFromClipboard();
 
     expect(service.content()).toBe('hello markdown');
+  });
+
+  it('inserts a dropped image at the cursor and copies it into assets', async () => {
+    vi.mocked(invoke).mockImplementation(async (command: string) => {
+      if (command === 'save_image_from_path') {
+        return './assets/photo.png';
+      }
+      return undefined;
+    });
+    service.filePath.set('/tmp/notes/doc.md');
+    service.isOpen.set(true);
+    service.setMode('edit');
+    service.setContent('hello ');
+    editorRef.textarea.set(makeTextarea('hello ', 6, 6));
+
+    await service.importImagePaths(['/tmp/photo.png']);
+
+    expect(invoke).toHaveBeenCalledWith('save_image_from_path', {
+      documentPath: '/tmp/notes/doc.md',
+      sourcePath: '/tmp/photo.png',
+    });
+    expect(service.content()).toBe('hello \n\n![photo](./assets/photo.png)');
+    expect(toast.message()).toBe('Image inserted');
+  });
+
+  it('ignores dropped files that are not images', async () => {
+    service.filePath.set('/tmp/notes/doc.md');
+    service.isOpen.set(true);
+    service.setContent('body');
+
+    await service.importImagePaths(['/tmp/notes.txt']);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(service.content()).toBe('body');
+  });
+
+  it('saves the document before inserting an image when it has no path', async () => {
+    vi.mocked(save).mockResolvedValue('/tmp/new.md');
+    vi.mocked(invoke).mockImplementation(async (command: string) => {
+      if (command === 'save_image') {
+        return './assets/image.png';
+      }
+      return undefined;
+    });
+    service.isOpen.set(true);
+    service.setMode('edit');
+    service.setContent('body');
+    editorRef.textarea.set(makeTextarea('body', 4, 4));
+
+    await service.insertImageBytes(new Uint8Array([1]), 'image.png');
+
+    expect(invoke).toHaveBeenCalledWith('write_markdown_file', {
+      path: '/tmp/new.md',
+      content: 'body',
+    });
+    expect(invoke).toHaveBeenCalledWith('save_image', {
+      documentPath: '/tmp/new.md',
+      fileName: 'image.png',
+      data: 'AQ==',
+    });
+    expect(service.filePath()).toBe('/tmp/new.md');
+    expect(service.content()).toContain('![image](./assets/image.png)');
+  });
+
+  it('does not insert an image when the save dialog is cancelled', async () => {
+    vi.mocked(save).mockResolvedValue(null);
+    service.isOpen.set(true);
+    service.setContent('body');
+
+    await service.insertImageBytes(new Uint8Array([1]), 'image.png');
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(service.content()).toBe('body');
+  });
+
+  it('shows a message when inserting an image without an open document', async () => {
+    await service.importImagePaths(['/tmp/photo.png']);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(toast.message()).toBe('Open a document before inserting an image');
+  });
+
+  it('pastes a clipboard image instead of text', async () => {
+    const images = TestBed.inject(ImageService);
+    vi.spyOn(images, 'readClipboardImage').mockResolvedValue({
+      bytes: new Uint8Array([1]),
+      fileName: 'clip.png',
+    });
+    vi.mocked(invoke).mockResolvedValue('./assets/clip.png');
+    service.filePath.set('/tmp/notes/doc.md');
+    service.isOpen.set(true);
+    service.setMode('edit');
+    service.setContent('x');
+    editorRef.textarea.set(makeTextarea('x', 1, 1));
+
+    await service.pasteFromClipboard();
+
+    expect(readText).not.toHaveBeenCalled();
+    expect(invoke).toHaveBeenCalledWith('save_image', {
+      documentPath: '/tmp/notes/doc.md',
+      fileName: 'clip.png',
+      data: 'AQ==',
+    });
+    expect(service.content()).toContain('![clip](./assets/clip.png)');
+  });
+
+  it('inserts an image chosen from the file dialog', async () => {
+    vi.mocked(open).mockResolvedValue('/tmp/photo.png');
+    vi.mocked(invoke).mockResolvedValue('./assets/photo.png');
+    service.filePath.set('/tmp/notes/doc.md');
+    service.isOpen.set(true);
+    service.setMode('edit');
+    editorRef.textarea.set(makeTextarea('', 0, 0));
+
+    await service.insertImageFromDialog();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: [expect.objectContaining({ name: 'Images' })],
+      }),
+    );
+    expect(invoke).toHaveBeenCalledWith('save_image_from_path', {
+      documentPath: '/tmp/notes/doc.md',
+      sourcePath: '/tmp/photo.png',
+    });
+    expect(service.content()).toBe('![photo](./assets/photo.png)');
+  });
+
+  it('switches to edit mode when an image is inserted from read mode', async () => {
+    vi.mocked(invoke).mockResolvedValue('./assets/photo.png');
+    service.filePath.set('/tmp/notes/doc.md');
+    service.isOpen.set(true);
+    service.setMode('read');
+    service.setContent('body');
+    editorRef.textarea.set(null);
+
+    await service.importImagePaths(['/tmp/photo.png']);
+
+    expect(service.mode()).toBe('edit');
+    expect(service.content()).toBe('body\n\n![photo](./assets/photo.png)');
   });
 });
 

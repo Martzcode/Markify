@@ -1,4 +1,9 @@
-<div class="editor" [class.editor-split]="document.mode() === 'hybrid'">
+<div
+  class="editor"
+  [class.editor-split]="document.mode() === 'hybrid'"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+>
   @if (document.error(); as error) {
     <div class="editor-error">{{ error }}</div>
   }
@@ -19,7 +24,8 @@
         [value]="document.content()"
         (input)="onInput($event)"
         (scroll)="onScroll($event)"
-        spellcheck="false"
+        [attr.spellcheck]="spellcheck.enabled() ? 'true' : 'false'"
+        [attr.lang]="spellcheck.langAttribute()"
       ></textarea>
     </div>
   }

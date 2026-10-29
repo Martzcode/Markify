@@ -7,6 +7,7 @@ import { DocumentService } from '../../services/document.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService } from '../../services/session.service';
+import { SpellcheckService } from '../../services/spellcheck.service';
 import { TocService } from '../../services/toc.service';
 
 describe('EditorView', () => {
@@ -426,5 +427,21 @@ describe('EditorView', () => {
     expect(image).not.toBeNull();
     expect(image!.getAttribute('onerror')).toBeNull();
     expect(preview.querySelector('script')).toBeNull();
+  });
+
+  it('applies the spellcheck preference and language to the textarea', () => {
+    const fixture = createFixture('Bonjour le monde', 'edit');
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+
+    expect(textarea.getAttribute('spellcheck')).toBe('true');
+    expect(textarea.hasAttribute('lang')).toBe(false);
+
+    const spellcheck = TestBed.inject(SpellcheckService);
+    spellcheck.setLanguage('fr');
+    spellcheck.toggle();
+    fixture.detectChanges();
+
+    expect(textarea.getAttribute('spellcheck')).toBe('false');
+    expect(textarea.getAttribute('lang')).toBe('fr');
   });
 });

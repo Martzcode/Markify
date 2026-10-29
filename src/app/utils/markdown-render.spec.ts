@@ -158,6 +158,44 @@ describe('renderMarkdownPlain', () => {
   });
 });
 
+describe('renderMarkdown images', () => {
+  it('rewrites image sources through the resolver after sanitization', () => {
+    const html = renderMarkdown('![photo](./assets/photo.png)', 'Copy', {
+      resolveImageSrc: (src) =>
+        src === './assets/photo.png' ? 'asset://localhost/photo.png' : null,
+    });
+
+    expect(html).toContain('src="asset://localhost/photo.png"');
+    expect(html).toContain('alt="photo"');
+    expect(html).not.toContain('__MARKIFY_IMAGE_');
+  });
+
+  it('removes images rejected by the resolver', () => {
+    const html = renderMarkdown('![secret](../secret.png)', 'Copy', {
+      resolveImageSrc: () => null,
+    });
+
+    expect(html).not.toContain('<img');
+  });
+
+  it('resolves raw HTML images before the sanitizer strips their path', () => {
+    const html = renderMarkdown('<img src="C:\\images\\photo.png" onerror="alert(1)">', 'Copy', {
+      allowRawHtml: true,
+      resolveImageSrc: (src) =>
+        src === 'C:\\images\\photo.png' ? 'asset://localhost/photo.png' : null,
+    });
+
+    expect(html).toContain('src="asset://localhost/photo.png"');
+    expect(html).not.toContain('onerror');
+  });
+
+  it('leaves images untouched when no resolver is provided', () => {
+    const html = renderMarkdown('![photo](./assets/photo.png)', 'Copy');
+
+    expect(html).toContain('src="./assets/photo.png"');
+  });
+});
+
 describe('renderMarkdown security', () => {
   it('escapes raw HTML by default', () => {
     const html = renderMarkdown('<div onclick="steal()">hi</div>', 'Copy');

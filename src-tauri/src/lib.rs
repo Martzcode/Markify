@@ -73,6 +73,124 @@ fn read_image_base64(path: String, base_dir: Option<String>) -> Result<String, S
   Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
 }
 
+const IMAGE_EXTENSIONS: [&str; 9] = [
+  "avif", "bmp", "gif", "ico", "jpeg", "jpg", "png", "svg", "webp",
+];
+
+fn is_image_file_name(name: &str) -> bool {
+  std::path::Path::new(name)
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .is_some_and(|extension| {
+      IMAGE_EXTENSIONS
+        .iter()
+        .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+    })
+}
+
+/// Réduit un nom de fichier à des caractères sûrs et garantit une extension
+/// d'image connue. Le nom ne contient jamais de séparateur de dossier.
+fn sanitize_image_file_name(name: &str) -> String {
+  let base = name
+    .rsplit(|character| character == '/' || character == '\\')
+    .next()
+    .unwrap_or(name);
+  let mut cleaned: String = base
+    .chars()
+    .map(|character| {
+      if character.is_ascii_alphanumeric() || character == '-' || character == '_' || character == '.'
+      {
+        character
+      } else {
+        '-'
+      }
+    })
+    .collect();
+  cleaned = cleaned.trim_matches('.').to_string();
+  if cleaned.is_empty() {
+    cleaned.push_str("image");
+  }
+  if !is_image_file_name(&cleaned) {
+    cleaned.push_str(".png");
+  }
+  cleaned
+}
+
+/// Ajoute un suffixe numérique plutôt que d'écraser une image existante.
+fn unique_image_path(directory: &std::path::Path, name: &str) -> std::path::PathBuf {
+  let candidate = directory.join(name);
+  if !candidate.exists() {
+    return candidate;
+  }
+  let path = std::path::Path::new(name);
+  let stem = path
+    .file_stem()
+    .and_then(|value| value.to_str())
+    .unwrap_or("image");
+  let extension = path
+    .extension()
+    .and_then(|value| value.to_str())
+    .unwrap_or("png");
+  let mut index = 1;
+  loop {
+    let candidate = directory.join(format!("{stem}-{index}.{extension}"));
+    if !candidate.exists() {
+      return candidate;
+    }
+    index += 1;
+  }
+}
+
+fn save_image_bytes(
+  document_path: &str,
+  file_name: &str,
+  bytes: &[u8],
+) -> Result<String, String> {
+  if bytes.is_empty() {
+    return Err("L'image est vide".to_string());
+  }
+  let document = std::path::Path::new(document_path);
+  let directory = document
+    .parent()
+    .filter(|directory| !directory.as_os_str().is_empty())
+    .ok_or_else(|| "Le document n'a pas de dossier".to_string())?;
+  let assets = directory.join("assets");
+  std::fs::create_dir_all(&assets).map_err(|err| err.to_string())?;
+  let name = sanitize_image_file_name(file_name);
+  let path = unique_image_path(&assets, &name);
+  std::fs::write(&path, bytes).map_err(|err| err.to_string())?;
+  let written = path
+    .file_name()
+    .and_then(|value| value.to_str())
+    .unwrap_or(&name);
+  Ok(format!("./assets/{written}"))
+}
+
+/// Enregistre une image fournie en base64 (presse-papiers) dans `./assets`.
+#[tauri::command]
+fn save_image(document_path: String, file_name: String, data: String) -> Result<String, String> {
+  use base64::Engine;
+  let bytes = base64::engine::general_purpose::STANDARD
+    .decode(data.as_bytes())
+    .map_err(|err| err.to_string())?;
+  save_image_bytes(&document_path, &file_name, &bytes)
+}
+
+/// Copie un fichier image existant (glisser-déposer, sélecteur) dans `./assets`.
+#[tauri::command]
+fn save_image_from_path(document_path: String, source_path: String) -> Result<String, String> {
+  let source = std::path::Path::new(&source_path);
+  let name = source
+    .file_name()
+    .and_then(|value| value.to_str())
+    .unwrap_or("image.png");
+  if !is_image_file_name(name) {
+    return Err("Le fichier sélectionné n'est pas une image".to_string());
+  }
+  let bytes = std::fs::read(source).map_err(|err| err.to_string())?;
+  save_image_bytes(&document_path, name, &bytes)
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PdfFontFile {
@@ -604,6 +722,119 @@ mod tests {
     assert!(read_image_base64(file.to_string_lossy().into_owned(), None).is_err());
     std::fs::remove_dir_all(dir).unwrap();
   }
+
+  #[test]
+  fn saves_an_image_next_to_the_document() {
+    let dir = std::env::temp_dir().join(format!("markify-image-save-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let document = dir.join("note.md");
+
+    let link = save_image_bytes(&document.to_string_lossy(), "photo.png", b"png").unwrap();
+
+    assert_eq!(link, "./assets/photo.png");
+    assert_eq!(std::fs::read(dir.join("assets/photo.png")).unwrap(), b"png");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn saves_a_base64_clipboard_image() {
+    let dir = std::env::temp_dir().join(format!("markify-image-b64-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let document = dir.join("note.md");
+
+    let link = save_image(
+      document.to_string_lossy().into_owned(),
+      "clip.png".to_string(),
+      base64_of(b"clip"),
+    )
+    .unwrap();
+
+    assert_eq!(link, "./assets/clip.png");
+    assert_eq!(std::fs::read(dir.join("assets/clip.png")).unwrap(), b"clip");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn sanitizes_image_names_and_blocks_traversal() {
+    let root = std::env::temp_dir().join(format!("markify-image-safe-{}", std::process::id()));
+    let dir = root.join("doc");
+    std::fs::create_dir_all(&dir).unwrap();
+    let document = dir.join("note.md");
+
+    let link = save_image_bytes(&document.to_string_lossy(), "../../evil.png", b"x").unwrap();
+
+    assert_eq!(link, "./assets/evil.png");
+    assert!(!root.join("evil.png").exists());
+    assert!(dir.join("assets/evil.png").exists());
+    std::fs::remove_dir_all(root).unwrap();
+  }
+
+  #[test]
+  fn replaces_unsafe_characters_in_image_names() {
+    let dir = std::env::temp_dir().join(format!("markify-image-chars-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let document = dir.join("note.md");
+
+    let link = save_image_bytes(&document.to_string_lossy(), "my photo (1).png", b"x").unwrap();
+
+    assert_eq!(link, "./assets/my-photo--1-.png");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn avoids_overwriting_an_existing_image() {
+    let dir = std::env::temp_dir().join(format!("markify-image-uniq-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let document = dir.join("note.md");
+
+    let first = save_image_bytes(&document.to_string_lossy(), "photo.png", b"one").unwrap();
+    let second = save_image_bytes(&document.to_string_lossy(), "photo.png", b"two").unwrap();
+
+    assert_eq!(first, "./assets/photo.png");
+    assert_eq!(second, "./assets/photo-1.png");
+    assert_eq!(std::fs::read(dir.join("assets/photo.png")).unwrap(), b"one");
+    assert_eq!(std::fs::read(dir.join("assets/photo-1.png")).unwrap(), b"two");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn copies_a_dropped_image_file() {
+    let root = std::env::temp_dir().join(format!("markify-image-drop-{}", std::process::id()));
+    let dir = root.join("doc");
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = root.join("screenshot.png");
+    std::fs::write(&source, b"dropped").unwrap();
+    let document = dir.join("note.md");
+
+    let link = save_image_from_path(
+      document.to_string_lossy().into_owned(),
+      source.to_string_lossy().into_owned(),
+    )
+    .unwrap();
+
+    assert_eq!(link, "./assets/screenshot.png");
+    assert_eq!(std::fs::read(dir.join("assets/screenshot.png")).unwrap(), b"dropped");
+    std::fs::remove_dir_all(root).unwrap();
+  }
+
+  #[test]
+  fn rejects_a_dropped_file_that_is_not_an_image() {
+    let root = std::env::temp_dir().join(format!("markify-image-bad-{}", std::process::id()));
+    let dir = root.join("doc");
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = root.join("notes.txt");
+    std::fs::write(&source, b"text").unwrap();
+    let document = dir.join("note.md");
+
+    let error = save_image_from_path(
+      document.to_string_lossy().into_owned(),
+      source.to_string_lossy().into_owned(),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("pas une image"));
+    std::fs::remove_dir_all(root).unwrap();
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -637,6 +868,8 @@ pub fn run() {
       write_markdown_file,
       write_pdf_file,
       read_image_base64,
+      save_image,
+      save_image_from_path,
       read_system_fonts,
       list_directory
     ])

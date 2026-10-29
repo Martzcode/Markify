@@ -73,6 +73,12 @@ export interface RenderMarkdownOptions {
    * alors affiché comme du texte. Même activé, il passe par l'assainisseur.
    */
   allowRawHtml?: boolean;
+  /**
+   * Résout la source d'une image avant l'assainissement. Retourner `null`
+   * retire l'image de l'aperçu. Les URL finales (par exemple `asset:`) sont
+   * réinjectées après DOMPurify, qui supprimerait leur schéma.
+   */
+  resolveImageSrc?: (src: string) => string | null;
 }
 
 export interface CodeBlockRenderOptions {
@@ -288,6 +294,49 @@ function createPdfParser(allowRawHtml: boolean): Marked {
 
 export const CODE_BLOCK_RENDER_PLACEHOLDER = '__MARKIFY_COPY_LABEL__';
 
+interface ResolvedImages {
+  html: string;
+  replacements: Array<{ token: string; src: string }>;
+}
+
+/**
+ * Applique le résolveur d'images avant l'assainissement. Les sources acceptées
+ * sont remplacées par des jetons neutres, restaurés après DOMPurify : sans
+ * cela, le protocole `asset:` et les chemins Windows seraient supprimés.
+ */
+function resolveImages(html: string, resolve: (src: string) => string | null): ResolvedImages {
+  if (!html.includes('<img')) {
+    return { html, replacements: [] };
+  }
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  const replacements: Array<{ token: string; src: string }> = [];
+  for (const image of Array.from(parsed.querySelectorAll('img'))) {
+    const src = image.getAttribute('src') ?? '';
+    const resolved = resolve(src);
+    if (resolved === null) {
+      image.remove();
+      continue;
+    }
+    if (resolved !== src) {
+      // Le jeton ressemble à un chemin relatif valide : DOMPurify conserve
+      // ainsi l'attribut `src` jusqu'au remplacement final.
+      const token = `markify-image-${replacements.length}.png`;
+      image.setAttribute('src', token);
+      replacements.push({ token, src: resolved });
+    }
+  }
+  return { html: parsed.body.innerHTML, replacements };
+}
+
+/** Réinjecte les URL d'images après l'assainissement. */
+function restoreImageSources(html: string, replacements: ResolvedImages['replacements']): string {
+  let result = html;
+  for (const { token, src } of replacements) {
+    result = result.replaceAll(`src="${token}"`, `src="${escapeHtml(src)}"`);
+  }
+  return result;
+}
+
 export function renderMarkdown(
   content: string,
   copyLabel: string,
@@ -298,8 +347,12 @@ export function renderMarkdown(
   }
   const escapedLabel = escapeHtml(copyLabel);
   slugCounts.clear();
-  const html = parserFor(options).parse(content) as string;
-  return sanitizePreviewHtml(html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel));
+  let html = parserFor(options).parse(content) as string;
+  html = html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel);
+  const images = options.resolveImageSrc
+    ? resolveImages(html, options.resolveImageSrc)
+    : { html, replacements: [] };
+  return restoreImageSources(sanitizePreviewHtml(images.html), images.replacements);
 }
 
 export function extractHeadings(content: string): HeadingEntry[] {

@@ -5,6 +5,20 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.12] - 2026-10-29
+
+### Ajouté
+
+- **Images locales** : les chemins relatifs (`./assets/photo.png`, `../images/…`) sont résolus par rapport au dossier du document et affichés dans l'aperçu via le protocole `asset:` de Tauri. Les images distantes continuent de fonctionner ; les sources `asset:` ou situées hors du dossier du document sont refusées.
+- **Collage et glisser-déposer** : une image copiée dans le presse-papiers ou déposée sur l'éditeur est enregistrée dans un dossier `assets/` à côté du document, puis insérée sous forme de lien Markdown (`![alt](./assets/nom.png)`). Un document non enregistré est sauvegardé au préalable.
+- **Édition → Insérer une image…** : un sélecteur de fichier copie l'image choisie dans `./assets` et insère le lien à la position du curseur.
+- Commandes Rust `save_image` (données base64 du presse-papiers) et `save_image_from_path` (fichier déposé ou sélectionné) ; les noms sont assainis et un suffixe numérique évite d'écraser une image existante.
+- **Correcteur orthographique** : le correcteur natif de la WebView est activé par défaut et se désactive via **Affichage → Vérifier l’orthographe**. La langue suit le système ou peut être fixée au français, à l’anglais, à l’allemand ou à l’espagnol ; le choix est mémorisé et le surlignage syntaxique de l’éditeur reste intact.
+
+### Modifié
+
+- Le protocole `asset:` est activé dans la configuration Tauri et autorisé dans la CSP (`http://asset.localhost`), avec un périmètre limité côté frontend au dossier du document.
+
 ## [2026.10.11] - 2026-10-29
 
 ### Modifié

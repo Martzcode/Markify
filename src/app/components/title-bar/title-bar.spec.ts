@@ -113,6 +113,45 @@ describe('TitleBar', () => {
     expect(updated.items.find((entry) => entry.label.includes('raw HTML'))!.checked).toBe(true);
   });
 
+  it('view menu toggles spellcheck, enabled by default', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const viewMenu = menus[2];
+    const item = viewMenu.items.find((entry) => entry.label.includes('Check spelling'));
+    expect(item).toBeDefined();
+    expect(item!.checked).toBe(true);
+
+    item!.action!();
+    const updated = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2];
+    expect(updated.items.find((entry) => entry.label.includes('Check spelling'))!.checked).toBe(
+      false,
+    );
+  });
+
+  it('view menu offers the spellcheck languages and remembers the choice', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const submenuItem = menus[2].items.find((entry) => entry.label.includes('Spellcheck language'));
+    expect(submenuItem).toBeDefined();
+    expect(submenuItem!.submenu!.items).toHaveLength(5);
+    expect(submenuItem!.submenu!.items[0].label).toContain('Automatic');
+    expect(submenuItem!.submenu!.items[0].checked).toBe(true);
+
+    const french = submenuItem!.submenu!.items.find((entry) => entry.label === 'Français');
+    expect(french).toBeDefined();
+    french!.action!();
+
+    const updated = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2];
+    const updatedSubmenu = updated.items.find((entry) =>
+      entry.label.includes('Spellcheck language'),
+    );
+    expect(
+      updatedSubmenu!.submenu!.items.find((entry) => entry.label === 'Français')!.checked,
+    ).toBe(true);
+  });
+
   it('offers a single cycling theme button before the window controls', () => {
     localStorage.clear();
     const fixture = TestBed.createComponent(TitleBar);

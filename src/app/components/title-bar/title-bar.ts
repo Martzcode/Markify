@@ -17,6 +17,7 @@ import { CodeBlockService } from '../../services/code-block.service';
 import { ExplorerService } from '../../services/explorer.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
+import { SPELLCHECK_LANGUAGES, SpellcheckService } from '../../services/spellcheck.service';
 import { ThemeService } from '../../services/theme.service';
 
 export interface TitleBarMenuItem {
@@ -49,6 +50,7 @@ export class TitleBar implements OnDestroy {
   private readonly explorer = inject(ExplorerService);
   private readonly search = inject(SearchService);
   private readonly security = inject(SecurityService);
+  private readonly spellcheck = inject(SpellcheckService);
   protected readonly theme = inject(ThemeService);
   private readonly unlisteners: Array<() => void> = [];
 
@@ -149,6 +151,11 @@ export class TitleBar implements OnDestroy {
           action: () => this.document.pasteFromClipboard(),
         },
         {
+          label: this.i18n.t('menu.edit.insertImage'),
+          disabled: !this.document.isOpen(),
+          action: () => this.document.insertImageFromDialog(),
+        },
+        {
           label: this.i18n.t('menu.edit.find'),
           shortcut: `${this.modKey}F`,
           disabled: !this.document.isOpen(),
@@ -207,6 +214,22 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.view.allowRawHtml'),
           checked: this.security.allowRawHtml(),
           action: () => this.security.toggleRawHtml(),
+        },
+        {
+          label: this.i18n.t('menu.view.spellcheck'),
+          checked: this.spellcheck.enabled(),
+          action: () => this.spellcheck.toggle(),
+        },
+        {
+          label: this.i18n.t('menu.view.spellcheckLanguage'),
+          submenu: {
+            label: this.i18n.t('menu.view.spellcheckLanguage'),
+            items: SPELLCHECK_LANGUAGES.map((lang) => ({
+              label: lang === 'auto' ? this.i18n.t('menu.view.spellcheckAuto') : LANG_NAMES[lang],
+              checked: this.spellcheck.language() === lang,
+              action: () => this.spellcheck.setLanguage(lang),
+            })),
+          },
         },
       ],
     },

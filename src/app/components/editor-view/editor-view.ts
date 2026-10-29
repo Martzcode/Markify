@@ -12,16 +12,20 @@ import {
   viewChild,
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { ImageService } from '../../services/image.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService, type ScrollRatios } from '../../services/session.service';
+import { SpellcheckService } from '../../services/spellcheck.service';
 import { TocService } from '../../services/toc.service';
+import { isImagePath } from '../../utils/image-path';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
 import { renderMarkdown } from '../../utils/markdown-render';
 import { highlightRenderedHtml, renderSearchLayer } from '../../utils/search';
@@ -48,7 +52,10 @@ export class EditorView implements OnDestroy {
   protected readonly search = inject(SearchService);
   private readonly codeBlocks = inject(CodeBlockService);
   private readonly security = inject(SecurityService);
+  protected readonly spellcheck = inject(SpellcheckService);
   private readonly editorRef = inject(EditorRefService);
+  private readonly images = inject(ImageService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = inject(TocService);
@@ -58,11 +65,17 @@ export class EditorView implements OnDestroy {
   private readonly highlightEl = viewChild<ElementRef<HTMLElement>>('highlight');
   private readonly searchEl = viewChild<ElementRef<HTMLElement>>('searchLayer');
   private readonly previewEl = viewChild<ElementRef<HTMLElement>>('preview');
+  private readonly unlisteners: Array<() => void> = [];
+  private readonly onPaste = (event: ClipboardEvent) => this.handlePaste(event);
+  private lastDropAt = 0;
+  private destroyed = false;
 
   protected readonly renderedHtml = computed(() => {
+    const documentPath = this.document.filePath();
     const html = renderMarkdown(this.document.content(), this.i18n.t('code.copy'), {
       lineNumbers: this.codeBlocks.lineNumbers(),
       allowRawHtml: this.security.allowRawHtml(),
+      resolveImageSrc: (src) => this.images.previewSrc(src, documentPath),
     });
     const query = this.search.query();
     const highlighted =
@@ -126,12 +139,92 @@ export class EditorView implements OnDestroy {
       }
       untracked(() => this.revealCurrentMatch());
     });
+    this.host.nativeElement.ownerDocument.addEventListener('paste', this.onPaste);
+    void this.listenForFileDrop();
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.host.nativeElement.ownerDocument.removeEventListener('paste', this.onPaste);
+    for (const unlisten of this.unlisteners) {
+      unlisten();
+    }
+    this.unlisteners.length = 0;
     // Le document est fermé : la recherche ne doit pas rester ouverte pour le
     // prochain document.
     this.search.close();
+  }
+
+  /**
+   * Écoute le glisser-déposer natif de Tauri, qui fournit des chemins de
+   * fichiers (contrairement au glisser-déposer HTML5 qui fournit des `File`).
+   */
+  private async listenForFileDrop(): Promise<void> {
+    try {
+      const unlisten = await getCurrentWindow().onDragDropEvent((event) => {
+        const payload = event.payload;
+        if (payload.type !== 'drop' || payload.paths.length === 0) {
+          return;
+        }
+        if (!this.isDropInside(payload.position) || !this.claimDrop()) {
+          return;
+        }
+        void this.document.importImagePaths(payload.paths);
+      });
+      if (this.destroyed) {
+        unlisten();
+        return;
+      }
+      this.unlisteners.push(unlisten);
+    } catch {
+      // Hors Tauri (tests, navigateur) : le glisser-déposer HTML5 reste actif.
+    }
+  }
+
+  /** Vérifie que le dépôt a eu lieu dans la zone de l'éditeur. */
+  private isDropInside(position: { x: number; y: number }): boolean {
+    const owner = this.host.nativeElement.ownerDocument;
+    const ratio = owner.defaultView?.devicePixelRatio || 1;
+    const target = owner.elementFromPoint(position.x / ratio, position.y / ratio);
+    return target !== null && this.host.nativeElement.contains(target);
+  }
+
+  /**
+   * Le dépôt natif et le dépôt HTML5 peuvent se déclencher pour le même geste :
+   * seul le premier est traité.
+   */
+  private claimDrop(): boolean {
+    const now = Date.now();
+    if (now - this.lastDropAt < 800) {
+      return false;
+    }
+    this.lastDropAt = now;
+    return true;
+  }
+
+  /**
+   * Repli pour le collage d'images : le raccourci clavier passe par Tauri, mais
+   * le collage natif (menu contextuel, Shift+Insert) fournit des `File` HTML5.
+   */
+  private handlePaste(event: ClipboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const textarea = this.editorRef.textarea();
+    if (
+      target &&
+      target !== textarea &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    ) {
+      return;
+    }
+    const files = Array.from(event.clipboardData?.items ?? [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+    if (files.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    void this.document.importImageFiles(files);
   }
 
   /**
@@ -256,6 +349,31 @@ export class EditorView implements OnDestroy {
   protected onInput(event: Event): void {
     const target = event.target as HTMLTextAreaElement;
     this.document.setContent(target.value);
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    const types = event.dataTransfer?.types;
+    if (!types || !Array.from(types).includes('Files')) {
+      return;
+    }
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  protected onDrop(event: DragEvent): void {
+    const files = Array.from(event.dataTransfer?.files ?? []).filter(
+      (file) => file.type.startsWith('image/') || isImagePath(file.name),
+    );
+    if (files.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    if (!this.claimDrop()) {
+      return;
+    }
+    void this.document.importImageFiles(files);
   }
 
   protected onScroll(event: Event): void {
