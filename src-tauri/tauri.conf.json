@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Markify",
-  "version": "2026.10.9",
+  "version": "2026.10.10",
   "identifier": "com.markify.app",
   "build": {
     "frontendDist": "../dist/markify/browser",
@@ -25,7 +25,9 @@
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: https://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'none'",
       "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: https://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost http://localhost:4200 ws://localhost:4200; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'none'",
-      "dangerousDisableAssetCspModification": ["style-src"]
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
@@ -44,7 +46,7 @@
     },
     "windows": {
       "wix": {
-        "version": "26.10.9"
+        "version": "26.10.10"
       }
     }
   }
