@@ -20,7 +20,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **UI/UX craft**: custom title bar adapted per platform (native macOS traffic lights, custom window controls elsewhere), window dragging, dropdown menus with submenus
 - **Internationalization**: UI fully translated into 4 languages (French, English, German, Spanish), automatic detection of the system language, persisted choice, type-safe translations verified at compile time
 - **Theming**: light/dark themes that follow the system preference in real time, through a CSS design-token system
-- **Software engineering practices**: service architecture with Angular Signals, unit testing (257 tests, Vitest), Tauri capability permissions model
+- **Software engineering practices**: service architecture with Angular Signals, unit testing (278 tests, Vitest), Tauri capability permissions model
 
 ### Features
 
@@ -33,6 +33,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 - **Save as / Save a copy** (File → Save As…, `Ctrl/Cmd+Shift+S`) through the native dialog
 - **Find & replace** (`Ctrl/Cmd+F`, `Ctrl/Cmd+H`): occurrence counter, next/previous navigation, match case, whole word and regular expressions, with highlighting in both the editor and the preview; replace all is a single undo step
 - **Syntax-highlighted code blocks** in the preview and the PDF export (25 common languages, light and dark palettes), with optional line numbers (View → Code line numbers) and the existing copy button
+- **Hardened preview**: Markdown output is sanitized with DOMPurify, raw HTML is disabled by default (View → Allow raw HTML) and stays sanitized when enabled, unsafe link schemes are neutralized, and a strict Content Security Policy replaces the previous `null` policy. Local images embedded in a PDF must live inside the document's folder
 - **Session restore**: on startup, reopens the last file and folder, view mode, visible panels, expanded folders, scroll position and the window's size
 - **Undo/Redo** with grouped typing history, **Cut/Copy/Paste** via the native clipboard
 - **4 languages**: Français, English, Deutsch, Español
@@ -45,7 +46,7 @@ _Markify est une application de bureau pour écrire et lire des documents Markdo
 
 | Layer         | Technology                                      |
 | ------------- | ----------------------------------------------- |
-| Frontend      | Angular 22, TypeScript, Angular Signals, marked |
+| Frontend      | Angular 22, TypeScript, Angular Signals, marked, highlight.js, DOMPurify |
 | Desktop shell | Tauri 2                                         |
 | Backend       | Rust — `std::fs` file I/O, Tauri commands       |
 | Plugins       | `dialog`, `clipboard-manager`, `log`, `opener`  |
@@ -88,7 +89,7 @@ npm run tauri:build # Build a production bundle (.deb, .AppImage, .msi, .msix, .
 
 ### Testing
 
-257 unit tests (27 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the search service and its matching/replacement utilities, the code block preferences, the Markdown renderer (syntax highlighting, escaping, PDF colours), the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
+278 unit tests (29 files) covering the document service (open/save/new, unsaved-changes guard, undo/redo, clipboard operations), the window close guard, the session service (restore, persistence, missing files), the explorer, the i18n service (all 4 languages, persistence), the theme service, the title bar menus, the editor view, the search service and its matching/replacement utilities, the code block preferences, the Markdown renderer (syntax highlighting, escaping, PDF colours), the HTML sanitizer and security preferences (raw HTML, link schemes, CSP-related rendering), the about dialog and the PDF export. Tauri APIs are mocked in `src/test-setup.ts` to run in isolation.
 
 ### Releases
 
@@ -108,7 +109,7 @@ AGPL-3.0
 - **Soin de l'UI/UX** : barre de titre personnalisée adaptée à chaque plateforme (traffic lights natifs sur macOS, contrôles de fenêtre personnalisés ailleurs), gestion du drag de la fenêtre, menus déroulants avec sous-menus
 - **Internationalisation** : interface entièrement traduite en 4 langues (français, anglais, allemand, espagnol), détection automatique de la langue du système, choix mémorisé, traductions typées vérifiées à la compilation
 - **Thème clair/sombre** : suit la préférence du système en temps réel, via un système de design tokens CSS
-- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (190 tests, Vitest), modèle de permissions de Tauri
+- **Pratiques d'ingénierie** : architecture en services avec les Signals d'Angular, tests unitaires (278 tests, Vitest), modèle de permissions de Tauri
 
 ### Fonctionnalités
 
@@ -121,6 +122,7 @@ AGPL-3.0
 - **Enregistrer sous / Enregistrer une copie** (Fichier → Enregistrer sous…, `Ctrl/Cmd+Shift+S`) via le dialogue natif
 - **Rechercher / remplacer** (`Ctrl/Cmd+F`, `Ctrl/Cmd+H`) : compteur d'occurrences, navigation précédent/suivant, respect de la casse, mot entier et expressions régulières, avec surlignage dans l'éditeur et l'aperçu ; « Remplacer tout » ne fait qu'une seule étape d'annulation
 - **Blocs de code colorés** dans l'aperçu et l'export PDF (25 langages courants, palettes claire et sombre), avec numéros de ligne optionnels (Affichage → Numéros de ligne du code) et le bouton « Copier » existant
+- **Aperçu sécurisé** : le rendu Markdown est assaini avec DOMPurify, le HTML brut est désactivé par défaut (Affichage → Autoriser le HTML brut) et reste assaini lorsqu'il est activé, les schémas de liens dangereux sont neutralisés, et une CSP stricte remplace l'ancienne politique `null`. Les images locales intégrées à un PDF doivent se trouver dans le dossier du document
 - **Restauration de session** : au démarrage, réouverture du dernier fichier et dossier, du mode de vue, des panneaux visibles, des dossiers dépliés, de la position de défilement et de la taille de la fenêtre
 - **Annuler/Rétablir** avec historique de frappe groupé, **Couper/Copier/Coller** via le presse-papiers natif
 - **4 langues** : Français, English, Deutsch, Español
@@ -176,7 +178,7 @@ npm run tauri:build # Générer un paquet de production (.deb, .AppImage, .msi, 
 
 ### Tests
 
-257 tests unitaires (27 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, le service de recherche et ses utilitaires de correspondance/remplacement, les préférences des blocs de code, le moteur de rendu Markdown (coloration, échappement, couleurs PDF), la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
+278 tests unitaires (29 fichiers) couvrant le service document (ouvrir/enregistrer/créer, garde des modifications, annuler/rétablir, opérations presse-papiers), le garde-fou de fermeture de fenêtre, le service de session (restauration, persistance, fichiers disparus), l'explorateur, le service i18n (les 4 langues, persistance), le service de thème, les menus de la barre de titre, la vue éditeur, le service de recherche et ses utilitaires de correspondance/remplacement, les préférences des blocs de code, le moteur de rendu Markdown (coloration, échappement, couleurs PDF), l'assainisseur HTML et les préférences de sécurité (HTML brut, schémas de liens, rendu lié à la CSP), la boîte À propos et l'export PDF. Les API Tauri sont mockées dans `src/test-setup.ts` pour fonctionner en isolation.
 
 ### Releases
 

@@ -5,6 +5,7 @@ import { EditorView } from './editor-view';
 import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
 import { SearchService } from '../../services/search.service';
+import { SecurityService } from '../../services/security.service';
 import { SessionService } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 
@@ -405,5 +406,25 @@ describe('EditorView', () => {
     );
     expect(numbers).toEqual(['1', '2']);
     expect(preview.querySelector('pre code')?.textContent).toBe('const a = 1;\nconst b = 2;');
+  });
+
+  it('escapes raw HTML by default and sanitizes it when allowed', () => {
+    const fixture = createFixture(
+      '<img src="x" onerror="alert(1)">\n\n<script>alert(2)</script>',
+      'read',
+    );
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+
+    expect(preview.querySelector('img')).toBeNull();
+    expect(preview.querySelector('script')).toBeNull();
+    expect(preview.textContent).toContain('<img');
+
+    TestBed.inject(SecurityService).toggleRawHtml();
+    fixture.detectChanges();
+
+    const image = preview.querySelector('img');
+    expect(image).not.toBeNull();
+    expect(image!.getAttribute('onerror')).toBeNull();
+    expect(preview.querySelector('script')).toBeNull();
   });
 });

@@ -147,7 +147,7 @@ async function imageToDataUrl(src: string, baseDir: string | null): Promise<stri
     return fetchRemoteImage(src);
   }
   const path = resolveLocalPath(src, baseDir);
-  const base64 = await invoke<string>('read_image_base64', { path });
+  const base64 = await invoke<string>('read_image_base64', { path, baseDir });
   return `data:${mimeForPath(path)};base64,${base64}`;
 }
 

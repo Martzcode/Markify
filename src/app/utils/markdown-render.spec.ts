@@ -135,8 +135,69 @@ describe('renderMarkdownPlain', () => {
     expect(html).not.toContain('<script>');
   });
 
+  it('escapes raw HTML by default', () => {
+    const html = renderMarkdownPlain('<img src="x" onerror="alert(1)">');
+
+    expect(html).toContain('&lt;img');
+    expect(html).not.toContain('<img');
+  });
+
+  it('sanitizes raw HTML when allowed but keeps inline colours', () => {
+    const html = renderMarkdownPlain(
+      '<img src="x" onerror="alert(1)">\n\n```ts\nconst x = 1;\n```',
+      { allowRawHtml: true },
+    );
+
+    expect(html).toContain('<img src="x">');
+    expect(html).not.toContain('onerror');
+    expect(html).toContain('style="color:#cf222e"');
+  });
+
   it('returns an empty string for empty content', () => {
     expect(renderMarkdownPlain('')).toBe('');
+  });
+});
+
+describe('renderMarkdown security', () => {
+  it('escapes raw HTML by default', () => {
+    const html = renderMarkdown('<div onclick="steal()">hi</div>', 'Copy');
+
+    expect(html).toContain('&lt;div');
+    expect(html).not.toContain('<div onclick');
+  });
+
+  it('renders sanitized raw HTML when the option is enabled', () => {
+    const html = renderMarkdown(
+      '<img src="x" onerror="alert(1)"><script>alert(2)</script>',
+      'Copy',
+      { allowRawHtml: true },
+    );
+
+    expect(html).toContain('<img src="x">');
+    expect(html).not.toContain('onerror');
+    expect(html).not.toContain('<script');
+  });
+
+  it('neutralises unsafe link schemes', () => {
+    const html = renderMarkdown('[bad](javascript:alert(1)) and [ok](https://example.com)', 'Copy');
+
+    expect(html).toContain('bad and');
+    expect(html).toContain('href="https://example.com"');
+    expect(html).not.toContain('javascript:');
+  });
+
+  it('keeps heading ids that collide with document properties', () => {
+    const html = renderMarkdown('# Title', 'Copy');
+
+    expect(html).toContain('<h1 id="title">Title</h1>');
+  });
+
+  it('still strips active tags when raw HTML is allowed', () => {
+    const html = renderMarkdown('<iframe src="https://evil.example"></iframe>', 'Copy', {
+      allowRawHtml: true,
+    });
+
+    expect(html).not.toContain('<iframe');
   });
 });
 

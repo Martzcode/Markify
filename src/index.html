@@ -1,37 +1,17 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Markify</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <script>
-    document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  </script>
-  <script>
-    window.addEventListener('contextmenu', (event) => event.preventDefault());
-  </script>
-  <script>
-    (() => {
-      for (const type of ['gesturestart', 'gesturechange']) {
-        document.addEventListener(type, (event) => event.preventDefault());
-      }
-      for (const type of ['touchstart', 'touchmove']) {
-        document.addEventListener(
-          type,
-          (event) => {
-            if (event.touches.length > 1) {
-              event.preventDefault();
-            }
-          },
-          { passive: false },
-        );
-      }
-    })();
-  </script>
-</head>
-<body>
-  <app-root></app-root>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Markify</title>
+    <base href="/" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script src="bootstrap.js"></script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
 </html>

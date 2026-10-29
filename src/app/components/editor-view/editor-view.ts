@@ -19,6 +19,7 @@ import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { SearchService } from '../../services/search.service';
+import { SecurityService } from '../../services/security.service';
 import { SessionService, type ScrollRatios } from '../../services/session.service';
 import { TocService } from '../../services/toc.service';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
@@ -46,6 +47,7 @@ export class EditorView implements OnDestroy {
   protected readonly document = inject(DocumentService);
   protected readonly search = inject(SearchService);
   private readonly codeBlocks = inject(CodeBlockService);
+  private readonly security = inject(SecurityService);
   private readonly editorRef = inject(EditorRefService);
   private readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -60,6 +62,7 @@ export class EditorView implements OnDestroy {
   protected readonly renderedHtml = computed(() => {
     const html = renderMarkdown(this.document.content(), this.i18n.t('code.copy'), {
       lineNumbers: this.codeBlocks.lineNumbers(),
+      allowRawHtml: this.security.allowRawHtml(),
     });
     const query = this.search.query();
     const highlighted =

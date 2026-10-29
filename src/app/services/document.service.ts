@@ -4,6 +4,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { I18nService } from '../i18n/i18n.service';
 import { EditorRefService } from './editor-ref.service';
+import { SecurityService } from './security.service';
 import { ToastService } from './toast.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 import { generatePdf } from '../utils/pdf-export';
@@ -38,6 +39,7 @@ function copyPath(path: string, suffix: string): string {
 export class DocumentService {
   private readonly i18n = inject(I18nService);
   private readonly toast = inject(ToastService);
+  private readonly security = inject(SecurityService);
   private readonly editorRef = inject(EditorRefService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
 
@@ -269,7 +271,12 @@ export class DocumentService {
       return;
     }
     try {
-      const result = await generatePdf(renderMarkdownPlain(this.content()), this.documentDir());
+      const result = await generatePdf(
+        renderMarkdownPlain(this.content(), {
+          allowRawHtml: this.security.allowRawHtml(),
+        }),
+        this.documentDir(),
+      );
       await invoke('write_pdf_file', { path, content: result.bytes });
       if (result.skippedImages.length > 0) {
         this.toast.show(

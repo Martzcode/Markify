@@ -5,6 +5,24 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.9] - 2026-10-29
+
+### Ajouté
+
+- **Aperçu sécurisé** : le HTML produit par le rendu Markdown est désormais assaini avec DOMPurify avant d'être injecté dans l'aperçu (balises actives, gestionnaires `on*` et schémas de liens dangereux retirés).
+- Option **Affichage → Autoriser le HTML brut**, désactivée par défaut et mémorisée entre les sessions. Lorsqu'elle est active, le HTML reste assaini : les balises comme `<script>`, `<iframe>` ou les attributs `onerror` ne sont jamais exécutés.
+- Les liens dont le schéma n'est ni `http`, `https`, `mailto`, relatif ou une ancre sont rendus en texte simple plutôt qu'en lien cliquable.
+- **CSP stricte** en production (`script-src 'self'`, `object-src 'none'`, `frame-src 'none'`, `form-action 'none'`) à la place de la politique `null` ; les scripts de démarrage sont déplacés dans `public/bootstrap.js`.
+
+### Modifié
+
+- L'export PDF réutilise le même assainisseur tout en conservant les styles inline nécessaires aux couleurs des blocs de code.
+- La commande Rust `read_image_base64` exige désormais le dossier du document et refuse toute image située en dehors : un fichier Markdown non fiable ne peut plus exfiltrer un fichier arbitraire dans un PDF exporté.
+
+### Corrigé
+
+- Les ancres de titres dont l'`id` correspond à une propriété de `document` (par exemple `title`) ne sont plus supprimées par l'assainisseur, ce qui préserve la table des matières et la navigation interne.
+
 ## [2026.10.8] - 2026-10-28
 
 ### Ajouté

@@ -56,9 +56,20 @@ fn write_pdf_file(path: String, content: Vec<u8>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn read_image_base64(path: String) -> Result<String, String> {
+fn read_image_base64(path: String, base_dir: Option<String>) -> Result<String, String> {
   use base64::Engine;
-  let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
+  // Une image locale n'est lue que si elle se trouve dans le dossier du
+  // document : un fichier Markdown non fiable ne peut donc pas exfiltrer un
+  // fichier arbitraire (clé SSH, etc.) dans le PDF exporté.
+  let base_dir = base_dir.ok_or_else(|| {
+    "Les images locales ne sont lues que depuis le dossier d'un document enregistré".to_string()
+  })?;
+  let base = std::fs::canonicalize(&base_dir).map_err(|err| err.to_string())?;
+  let file = std::fs::canonicalize(&path).map_err(|err| err.to_string())?;
+  if !file.starts_with(&base) {
+    return Err("Image en dehors du dossier du document".to_string());
+  }
+  let bytes = std::fs::read(&file).map_err(|err| err.to_string())?;
   Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
 }
 
@@ -545,6 +556,52 @@ mod tests {
     assert!(entries.iter().all(|e| e.is_dir || e.name.to_lowercase().ends_with(".md")
       || e.name.to_lowercase().ends_with(".markdown")
       || e.name.to_lowercase().ends_with(".mdx")));
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn reads_an_image_inside_the_document_dir() {
+    let dir = std::env::temp_dir().join(format!("markify-image-in-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("img.bin");
+    std::fs::write(&file, b"abc").unwrap();
+
+    let encoded = read_image_base64(
+      file.to_string_lossy().into_owned(),
+      Some(dir.to_string_lossy().into_owned()),
+    )
+    .unwrap();
+
+    assert_eq!(encoded, "YWJj");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn rejects_an_image_outside_the_document_dir() {
+    let root = std::env::temp_dir().join(format!("markify-image-out-{}", std::process::id()));
+    let base = root.join("doc");
+    std::fs::create_dir_all(&base).unwrap();
+    let secret = root.join("secret.txt");
+    std::fs::write(&secret, b"secret").unwrap();
+
+    let error = read_image_base64(
+      secret.to_string_lossy().into_owned(),
+      Some(base.to_string_lossy().into_owned()),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("hors du dossier"));
+    std::fs::remove_dir_all(root).unwrap();
+  }
+
+  #[test]
+  fn rejects_a_local_image_without_a_document_dir() {
+    let dir = std::env::temp_dir().join(format!("markify-image-none-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("img.bin");
+    std::fs::write(&file, b"abc").unwrap();
+
+    assert!(read_image_base64(file.to_string_lossy().into_owned(), None).is_err());
     std::fs::remove_dir_all(dir).unwrap();
   }
 }

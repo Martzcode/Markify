@@ -26,6 +26,7 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
 import yaml from 'highlight.js/lib/languages/yaml';
 import { escapeHtml } from './markdown-highlight';
+import { sanitizePdfHtml, sanitizePreviewHtml } from './sanitize';
 
 // Seulement les langages courants : le bundle reste raisonnable et les
 // grammaires exotiques retombent sur du texte échappé.
@@ -67,6 +68,11 @@ const MAX_HIGHLIGHT_LENGTH = 100_000;
 export interface RenderMarkdownOptions {
   /** Affiche une gouttière de numéros devant chaque ligne de code. */
   lineNumbers?: boolean;
+  /**
+   * Interprète le HTML brut du Markdown. Désactivé par défaut : le HTML est
+   * alors affiché comme du texte. Même activé, il passe par l'assainisseur.
+   */
+  allowRawHtml?: boolean;
 }
 
 export interface CodeBlockRenderOptions {
@@ -191,6 +197,16 @@ function lineNumbersGutter(code: string): string {
   return `<div class="code-block-gutter" aria-hidden="true">${numbers}</div>`;
 }
 
+/**
+ * Refuse les schémas autres que `http`, `https` et `mailto` (les liens
+ * relatifs et les ancres restent autorisés). DOMPurify fait déjà ce tri, mais
+ * on évite ainsi de produire un lien dangereux avant même l'assainissement.
+ */
+function isSafeHref(href: string): boolean {
+  const scheme = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(href.trim());
+  return !scheme || /^(https?|mailto)$/i.test(scheme[1]);
+}
+
 function createParser(options: RenderMarkdownOptions): Marked {
   return new Marked({
     gfm: true,
@@ -199,9 +215,15 @@ function createParser(options: RenderMarkdownOptions): Marked {
       heading(token) {
         return `<h${token.depth} id="${nextHeadingId(token.raw)}">${token.text}</h${token.depth}>`;
       },
+      html({ text }) {
+        return options.allowRawHtml ? text : escapeHtml(text);
+      },
       link(token: Tokens.Link) {
         const href = token.href ?? '';
         const text = this.parser.parseInline(token.tokens);
+        if (!isSafeHref(href)) {
+          return text;
+        }
         return `<a href="${escapeHtml(href)}" title="${escapeHtml(href)}">${text}</a>`;
       },
       code({ text, lang }) {
@@ -231,32 +253,38 @@ function createParser(options: RenderMarkdownOptions): Marked {
   });
 }
 
-const parserCache = new Map<boolean, Marked>();
+const parserCache = new Map<string, Marked>();
 
-function parserFor(lineNumbers: boolean): Marked {
-  let parser = parserCache.get(lineNumbers);
+function parserFor(options: RenderMarkdownOptions): Marked {
+  const key = `${options.lineNumbers === true}:${options.allowRawHtml === true}`;
+  let parser = parserCache.get(key);
   if (!parser) {
-    parser = createParser({ lineNumbers });
-    parserCache.set(lineNumbers, parser);
+    parser = createParser(options);
+    parserCache.set(key, parser);
   }
   return parser;
 }
 
 const parser = createParser({});
 
-const pdfParser = new Marked({
-  gfm: true,
-  async: false,
-  renderer: {
-    code({ text, lang }) {
-      const language = normalizeLanguage(lang);
-      const code = stripTrailingNewline(text);
-      const highlighted = highlightCodeForPdf(code, language);
-      const classAttr = language ? ` class="language-${language}"` : '';
-      return `<pre><code${classAttr}>${highlighted}</code></pre>`;
+function createPdfParser(allowRawHtml: boolean): Marked {
+  return new Marked({
+    gfm: true,
+    async: false,
+    renderer: {
+      html({ text }) {
+        return allowRawHtml ? text : escapeHtml(text);
+      },
+      code({ text, lang }) {
+        const language = normalizeLanguage(lang);
+        const code = stripTrailingNewline(text);
+        const highlighted = highlightCodeForPdf(code, language);
+        const classAttr = language ? ` class="language-${language}"` : '';
+        return `<pre><code${classAttr}>${highlighted}</code></pre>`;
+      },
     },
-  },
-});
+  });
+}
 
 export const CODE_BLOCK_RENDER_PLACEHOLDER = '__MARKIFY_COPY_LABEL__';
 
@@ -270,8 +298,8 @@ export function renderMarkdown(
   }
   const escapedLabel = escapeHtml(copyLabel);
   slugCounts.clear();
-  const html = parserFor(options.lineNumbers === true).parse(content) as string;
-  return html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel);
+  const html = parserFor(options).parse(content) as string;
+  return sanitizePreviewHtml(html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel));
 }
 
 export function extractHeadings(content: string): HeadingEntry[] {
@@ -299,9 +327,9 @@ export function extractHeadings(content: string): HeadingEntry[] {
   return headings;
 }
 
-export function renderMarkdownPlain(content: string): string {
+export function renderMarkdownPlain(content: string, options: RenderMarkdownOptions = {}): string {
   if (!content) {
     return '';
   }
-  return pdfParser.parse(content) as string;
+  return sanitizePdfHtml(createPdfParser(options.allowRawHtml === true).parse(content) as string);
 }

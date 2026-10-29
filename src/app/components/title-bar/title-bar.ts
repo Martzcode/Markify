@@ -16,6 +16,7 @@ import { AboutDialogService } from '../../services/about-dialog.service';
 import { CodeBlockService } from '../../services/code-block.service';
 import { ExplorerService } from '../../services/explorer.service';
 import { SearchService } from '../../services/search.service';
+import { SecurityService } from '../../services/security.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -46,6 +47,7 @@ export class TitleBar implements OnDestroy {
   private readonly codeBlocks = inject(CodeBlockService);
   private readonly explorer = inject(ExplorerService);
   private readonly search = inject(SearchService);
+  private readonly security = inject(SecurityService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
@@ -198,6 +200,11 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.view.codeLineNumbers'),
           checked: this.codeBlocks.lineNumbers(),
           action: () => this.codeBlocks.toggleLineNumbers(),
+        },
+        {
+          label: this.i18n.t('menu.view.allowRawHtml'),
+          checked: this.security.allowRawHtml(),
+          action: () => this.security.toggleRawHtml(),
         },
       ],
     },
