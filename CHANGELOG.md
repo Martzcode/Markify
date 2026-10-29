@@ -5,6 +5,13 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.11] - 2026-10-29
+
+### Modifié
+
+- **Bouton de thème unique** : les trois icônes séparées (soleil, lune, auto) sont remplacées par un seul bouton dont l'icône reflète le mode courant. Chaque clic passe au mode suivant : clair → sombre → auto → clair.
+- L'info-bulle, traduite dans les 4 langues, annonce le mode courant et le mode suivant ; le choix reste mémorisé entre les sessions.
+
 ## [2026.10.10] - 2026-10-29
 
 ### Ajouté

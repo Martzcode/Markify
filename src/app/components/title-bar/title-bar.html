@@ -81,39 +81,25 @@
     </nav>
   </div>
   <div class="titlebar-right">
-    <div class="theme-switch" role="group" [attr.aria-label]="i18n.t('theme.label')">
+    <div class="theme-switch">
       <button
         type="button"
         class="theme-btn"
-        [class.active]="theme.preference() === 'light'"
-        [attr.title]="i18n.t('theme.light')"
-        [attr.aria-label]="i18n.t('theme.light')"
-        [attr.aria-pressed]="theme.preference() === 'light'"
-        (click)="theme.setPreference('light')"
+        [attr.title]="themeTooltip()"
+        [attr.aria-label]="themeTooltip()"
+        (click)="theme.cycle()"
       >
-        <i class="fa-solid fa-sun" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="theme-btn"
-        [class.active]="theme.preference() === 'dark'"
-        [attr.title]="i18n.t('theme.dark')"
-        [attr.aria-label]="i18n.t('theme.dark')"
-        [attr.aria-pressed]="theme.preference() === 'dark'"
-        (click)="theme.setPreference('dark')"
-      >
-        <i class="fa-solid fa-moon" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="theme-btn"
-        [class.active]="theme.preference() === 'auto'"
-        [attr.title]="i18n.t('theme.auto')"
-        [attr.aria-label]="i18n.t('theme.auto')"
-        [attr.aria-pressed]="theme.preference() === 'auto'"
-        (click)="theme.setPreference('auto')"
-      >
-        <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+        @switch (theme.preference()) {
+          @case ('light') {
+            <i class="fa-solid fa-sun" aria-hidden="true"></i>
+          }
+          @case ('dark') {
+            <i class="fa-solid fa-moon" aria-hidden="true"></i>
+          }
+          @default {
+            <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+          }
+        }
       </button>
     </div>
     @if (!isMac) {

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TitleBar } from './title-bar';
 import { ThemeService } from '../../services/theme.service';
+import { I18nService } from '../../i18n/i18n.service';
 
 describe('TitleBar', () => {
   let component: TitleBar;
@@ -112,37 +113,40 @@ describe('TitleBar', () => {
     expect(updated.items.find((entry) => entry.label.includes('raw HTML'))!.checked).toBe(true);
   });
 
-  it('offers light, dark and auto theme buttons before the window controls', () => {
+  it('offers a single cycling theme button before the window controls', () => {
     localStorage.clear();
     const fixture = TestBed.createComponent(TitleBar);
     fixture.detectChanges();
 
     const right = fixture.nativeElement.querySelector('.titlebar-right') as HTMLElement;
     const themeSwitch = right.querySelector('.theme-switch') as HTMLElement;
-    const buttons = Array.from(themeSwitch.querySelectorAll('.theme-btn')) as HTMLButtonElement[];
+    const buttons = themeSwitch.querySelectorAll('.theme-btn') as NodeListOf<HTMLButtonElement>;
 
     expect(right.children[0]).toBe(themeSwitch);
-    expect(buttons).toHaveLength(3);
-    expect(buttons[0].querySelector('.fa-sun')).not.toBeNull();
-    expect(buttons[1].querySelector('.fa-moon')).not.toBeNull();
-    expect(buttons[2].querySelector('.fa-circle-half-stroke')).not.toBeNull();
+    expect(buttons).toHaveLength(1);
 
     const theme = TestBed.inject(ThemeService);
+    const i18n = TestBed.inject(I18nService);
+    const button = buttons[0];
     expect(theme.preference()).toBe('auto');
-    expect(buttons[2].getAttribute('aria-pressed')).toBe('true');
+    expect(button.querySelector('.fa-circle-half-stroke')).not.toBeNull();
+    expect(button.getAttribute('title')).toContain(i18n.t('theme.auto'));
 
-    buttons[0].click();
+    button.click();
     fixture.detectChanges();
     expect(theme.preference()).toBe('light');
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
-    expect(buttons[2].getAttribute('aria-pressed')).toBe('false');
+    expect(button.querySelector('.fa-sun')).not.toBeNull();
+    expect(button.getAttribute('title')).toContain(i18n.t('theme.light'));
 
-    buttons[1].click();
+    button.click();
     fixture.detectChanges();
     expect(theme.preference()).toBe('dark');
+    expect(button.querySelector('.fa-moon')).not.toBeNull();
+    expect(button.getAttribute('title')).toContain(i18n.t('theme.dark'));
 
-    buttons[2].click();
+    button.click();
     fixture.detectChanges();
     expect(theme.preference()).toBe('auto');
+    expect(button.querySelector('.fa-circle-half-stroke')).not.toBeNull();
   });
 });

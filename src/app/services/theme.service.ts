@@ -5,6 +5,9 @@ const STORAGE_KEY = 'markify.theme';
 
 export type ThemePreference = 'light' | 'dark' | 'auto';
 
+/** Ordre de rotation du bouton de thème unique. */
+const THEME_ORDER: readonly ThemePreference[] = ['light', 'dark', 'auto'];
+
 function isPreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'auto';
 }
@@ -52,6 +55,17 @@ export class ThemeService {
     } catch {
       // Stockage indisponible : le choix reste valable pour la session.
     }
+  }
+
+  /** Préférence qui sera appliquée au prochain clic sur le bouton de thème. */
+  nextPreference(): ThemePreference {
+    const index = THEME_ORDER.indexOf(this.preference());
+    return THEME_ORDER[(index + 1) % THEME_ORDER.length];
+  }
+
+  /** Passe à la préférence suivante : clair → sombre → auto → clair. */
+  cycle(): void {
+    this.setPreference(this.nextPreference());
   }
 
   private resolveDark(preference: ThemePreference, systemDark: boolean): boolean {

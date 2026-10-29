@@ -248,6 +248,14 @@ export class TitleBar implements OnDestroy {
     void this.win.minimize();
   }
 
+  /** Info-bulle du bouton de thème : état courant et état suivant. */
+  protected themeTooltip(): string {
+    return this.i18n.t('theme.switch', {
+      state: this.i18n.t(`theme.${this.theme.preference()}`),
+      next: this.i18n.t(`theme.${this.theme.nextPreference()}`),
+    });
+  }
+
   protected onToggleMaximize(): void {
     void this.win.toggleMaximize();
   }

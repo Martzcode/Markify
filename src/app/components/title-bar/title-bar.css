@@ -215,11 +215,6 @@
   background: var(--titlebar-hover-bg);
 }
 
-.theme-btn.active {
-  color: var(--accent);
-  background: var(--titlebar-hover-bg);
-}
-
 .theme-btn:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: -1px;

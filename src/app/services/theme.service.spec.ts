@@ -117,4 +117,37 @@ describe('ThemeService', () => {
     expect(service.preference()).toBe('auto');
     expect(service.isDark()).toBe(true);
   });
+
+  it('reports the next preference in the cycle order', () => {
+    installMatchMedia(false);
+    const service = new ThemeService();
+    expect(service.nextPreference()).toBe('light');
+
+    service.setPreference('light');
+    expect(service.nextPreference()).toBe('dark');
+
+    service.setPreference('dark');
+    expect(service.nextPreference()).toBe('auto');
+  });
+
+  it('cycles light → dark → auto and persists each step', () => {
+    installMatchMedia(false);
+    const service = new ThemeService();
+    service.setPreference('auto');
+
+    service.cycle();
+    expect(service.preference()).toBe('light');
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(localStorage.getItem('markify.theme')).toBe('light');
+
+    service.cycle();
+    expect(service.preference()).toBe('dark');
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(localStorage.getItem('markify.theme')).toBe('dark');
+
+    service.cycle();
+    expect(service.preference()).toBe('auto');
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(localStorage.getItem('markify.theme')).toBe('auto');
+  });
 });
