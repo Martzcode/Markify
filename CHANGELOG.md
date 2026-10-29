@@ -5,6 +5,19 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.10.10] - 2026-10-29
+
+### Ajouté
+
+- **Sélecteur de thème à trois états** dans la barre de titre, à gauche du bouton Réduire : soleil pour le thème clair, lune pour le thème sombre et cercle mi-rempli pour le mode automatique (système).
+- Info-bulles traduites dans les 4 langues et état actif visible sur le bouton sélectionné ; le choix est mémorisé entre les sessions (`markify.theme`).
+- En mode automatique, le thème suit les changements du système en temps réel ; en mode clair ou sombre, ces changements sont ignorés.
+
+### Corrigé
+
+- **Styles globaux absents en production** : Angular générait `<link media="print" onload="…">` pour charger le CSS de façon asynchrone. Cet `onload` inline étant bloqué par la CSP stricte, la feuille globale (dont Font Awesome) ne s'appliquait jamais. L'inlining critique est désactivé au profit d'un `<link rel="stylesheet">` classique.
+- **Styles de composants bloqués en production** : Tauri injectait des nonces/hashs dans `style-src`, ce qui neutralisait `'unsafe-inline'` et empêchait l'application des `<style>` créés par Angular à l'exécution. L'injection automatique est désormais désactivée pour `style-src` uniquement ; `script-src` conserve sa protection stricte.
+
 ## [2026.10.9] - 2026-10-29
 
 ### Ajouté

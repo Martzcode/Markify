@@ -20,7 +20,15 @@ function installMatchMedia(matches: boolean): MockMql {
   return mql;
 }
 
+function systemChangeHandler(mql: MockMql): (event: { matches: boolean }) => void {
+  return mql.addEventListener.mock.calls[0][1] as (event: { matches: boolean }) => void;
+}
+
 describe('ThemeService', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   afterEach(() => {
     delete document.documentElement.dataset['theme'];
   });
@@ -35,19 +43,78 @@ describe('ThemeService', () => {
     expect(document.documentElement.dataset['theme']).toBe('dark');
   });
 
-  it('reacts to system theme changes', () => {
+  it('reacts to system theme changes in auto mode', () => {
     const mql = installMatchMedia(false);
     const service = new ThemeService();
+    expect(service.preference()).toBe('auto');
     expect(service.isDark()).toBe(false);
     expect(document.documentElement.dataset['theme']).toBe('light');
 
     mql.matches = true;
-    const handler = mql.addEventListener.mock.calls[0][1] as (event: {
-      matches: boolean;
-    }) => void;
-    handler({ matches: true });
+    systemChangeHandler(mql)({ matches: true });
 
     expect(service.isDark()).toBe(true);
     expect(document.documentElement.dataset['theme']).toBe('dark');
+  });
+
+  it('applies and persists a manual preference', () => {
+    installMatchMedia(true);
+    const service = new ThemeService();
+    expect(service.isDark()).toBe(true);
+
+    service.setPreference('light');
+    expect(service.isDark()).toBe(false);
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(localStorage.getItem('markify.theme')).toBe('light');
+
+    service.setPreference('dark');
+    expect(service.isDark()).toBe(true);
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(localStorage.getItem('markify.theme')).toBe('dark');
+  });
+
+  it('restores the saved preference', () => {
+    localStorage.setItem('markify.theme', 'dark');
+    installMatchMedia(false);
+
+    const service = new ThemeService();
+
+    expect(service.preference()).toBe('dark');
+    expect(service.isDark()).toBe(true);
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+  });
+
+  it('ignores system changes when a manual preference is set', () => {
+    const mql = installMatchMedia(false);
+    const service = new ThemeService();
+    service.setPreference('light');
+
+    systemChangeHandler(mql)({ matches: true });
+
+    expect(service.isDark()).toBe(false);
+    expect(document.documentElement.dataset['theme']).toBe('light');
+  });
+
+  it('follows the system again after switching back to auto', () => {
+    const mql = installMatchMedia(false);
+    const service = new ThemeService();
+    service.setPreference('dark');
+    expect(service.isDark()).toBe(true);
+
+    service.setPreference('auto');
+    expect(service.isDark()).toBe(false);
+
+    systemChangeHandler(mql)({ matches: true });
+    expect(service.isDark()).toBe(true);
+  });
+
+  it('falls back to auto when the stored value is invalid', () => {
+    localStorage.setItem('markify.theme', 'purple');
+    installMatchMedia(true);
+
+    const service = new ThemeService();
+
+    expect(service.preference()).toBe('auto');
+    expect(service.isDark()).toBe(true);
   });
 });

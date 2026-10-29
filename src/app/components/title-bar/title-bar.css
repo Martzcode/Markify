@@ -189,6 +189,42 @@
   align-items: stretch;
 }
 
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--menu-fg);
+  font-size: 12px;
+  cursor: default;
+}
+
+.theme-btn:hover {
+  background: var(--titlebar-hover-bg);
+}
+
+.theme-btn.active {
+  color: var(--accent);
+  background: var(--titlebar-hover-bg);
+}
+
+.theme-btn:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .win-btn {
   display: flex;
   align-items: center;

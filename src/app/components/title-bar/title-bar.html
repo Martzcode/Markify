@@ -80,8 +80,43 @@
       }
     </nav>
   </div>
-  @if (!isMac) {
-    <div class="titlebar-right">
+  <div class="titlebar-right">
+    <div class="theme-switch" role="group" [attr.aria-label]="i18n.t('theme.label')">
+      <button
+        type="button"
+        class="theme-btn"
+        [class.active]="theme.preference() === 'light'"
+        [attr.title]="i18n.t('theme.light')"
+        [attr.aria-label]="i18n.t('theme.light')"
+        [attr.aria-pressed]="theme.preference() === 'light'"
+        (click)="theme.setPreference('light')"
+      >
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="theme-btn"
+        [class.active]="theme.preference() === 'dark'"
+        [attr.title]="i18n.t('theme.dark')"
+        [attr.aria-label]="i18n.t('theme.dark')"
+        [attr.aria-pressed]="theme.preference() === 'dark'"
+        (click)="theme.setPreference('dark')"
+      >
+        <i class="fa-solid fa-moon" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="theme-btn"
+        [class.active]="theme.preference() === 'auto'"
+        [attr.title]="i18n.t('theme.auto')"
+        [attr.aria-label]="i18n.t('theme.auto')"
+        [attr.aria-pressed]="theme.preference() === 'auto'"
+        (click)="theme.setPreference('auto')"
+      >
+        <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+      </button>
+    </div>
+    @if (!isMac) {
       <button type="button" class="win-btn" title="Minimize" (click)="onMinimize()">
         <i class="fa-solid fa-window-minimize" aria-hidden="true"></i>
       </button>
@@ -100,6 +135,6 @@
       <button type="button" class="win-btn win-close" title="Close" (click)="onClose()">
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
-    </div>
-  }
+    }
+  </div>
 </header>

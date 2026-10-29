@@ -17,6 +17,7 @@ import { CodeBlockService } from '../../services/code-block.service';
 import { ExplorerService } from '../../services/explorer.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
+import { ThemeService } from '../../services/theme.service';
 
 export interface TitleBarMenuItem {
   label: string;
@@ -48,6 +49,7 @@ export class TitleBar implements OnDestroy {
   private readonly explorer = inject(ExplorerService);
   private readonly search = inject(SearchService);
   private readonly security = inject(SecurityService);
+  protected readonly theme = inject(ThemeService);
   private readonly unlisteners: Array<() => void> = [];
 
   protected readonly isMaximized = signal(false);
