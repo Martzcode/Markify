@@ -21,15 +21,17 @@
           (click)="toggleMenu(menu.label)"
           (mouseenter)="hoverMenu(menu.label)"
         >
-          <button type="button" class="menu-label">{{ menu.label }}</button>
+          <button type="button" class="menu-label" (mouseenter)="closeSubmenu()">
+            {{ menu.label }}
+          </button>
           @if (openMenu() === menu.label) {
-            <div class="menu-dropdown">
+            <div class="menu-dropdown" (mouseleave)="closeSubmenu()">
               @for (item of menu.items; track item.label) {
                 @if (item.submenu) {
                   <div
                     class="menu-item menu-item-submenu"
                     [class.open]="openSubmenu() === item.label"
-                    (mouseenter)="openSubmenu.set(item.label)"
+                    (mouseenter)="hoverItem(item)"
                   >
                     <span class="menu-check"></span>
                     <span class="menu-item-text">{{ item.label }}</span>
@@ -62,6 +64,7 @@
                     class="menu-item"
                     [disabled]="item.disabled"
                     (click)="runItem($event, item)"
+                    (mouseenter)="hoverItem(item)"
                     [class.menu-item-radio]="item.checked !== undefined"
                   >
                     <span class="menu-item-text">{{ item.label }}</span>
@@ -98,6 +101,27 @@
           }
           @default {
             <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+          }
+        }
+      </button>
+    </div>
+    <div class="mode-switch">
+      <button
+        type="button"
+        class="mode-btn"
+        [attr.title]="modeTooltip()"
+        [attr.aria-label]="modeTooltip()"
+        (click)="document.toggleMode()"
+      >
+        @switch (document.mode()) {
+          @case ('read') {
+            <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+          }
+          @case ('edit') {
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+          }
+          @default {
+            <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
           }
         }
       </button>

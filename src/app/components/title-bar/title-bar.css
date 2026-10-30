@@ -189,14 +189,16 @@
   align-items: stretch;
 }
 
-.theme-switch {
+.theme-switch,
+.mode-switch {
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 0 8px;
 }
 
-.theme-btn {
+.theme-btn,
+.mode-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,11 +213,13 @@
   cursor: default;
 }
 
-.theme-btn:hover {
+.theme-btn:hover,
+.mode-btn:hover {
   background: var(--titlebar-hover-bg);
 }
 
-.theme-btn:focus-visible {
+.theme-btn:focus-visible,
+.mode-btn:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }

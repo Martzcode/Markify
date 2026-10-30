@@ -10,7 +10,7 @@ import {
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { I18nService } from '../../i18n/i18n.service';
 import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
-import { DocumentService } from '../../services/document.service';
+import { DocumentService, type EditorMode } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { AboutDialogService } from '../../services/about-dialog.service';
 import { CodeBlockService } from '../../services/code-block.service';
@@ -279,6 +279,25 @@ export class TitleBar implements OnDestroy {
     });
   }
 
+  /** Info-bulle du bouton de mode : état courant et état suivant. */
+  protected modeTooltip(): string {
+    return this.i18n.t('view.switch', {
+      state: this.modeLabel(this.document.mode()),
+      next: this.modeLabel(this.document.nextMode()),
+    });
+  }
+
+  private modeLabel(mode: EditorMode): string {
+    switch (mode) {
+      case 'read':
+        return this.i18n.t('menu.view.readMode');
+      case 'edit':
+        return this.i18n.t('menu.view.editMode');
+      default:
+        return this.i18n.t('menu.view.hybridMode');
+    }
+  }
+
   protected onToggleMaximize(): void {
     void this.win.toggleMaximize();
   }
@@ -293,9 +312,24 @@ export class TitleBar implements OnDestroy {
   }
 
   protected hoverMenu(label: string): void {
-    if (this.openMenu() !== null) {
-      this.openMenu.set(label);
+    if (this.openMenu() === null) {
+      return;
     }
+    if (this.openMenu() !== label) {
+      // Changer de menu principal referme le sous-menu du précédent.
+      this.openSubmenu.set(null);
+    }
+    this.openMenu.set(label);
+  }
+
+  /** Ouvre le sous-menu survolé, ou ferme celui qui était ouvert. */
+  protected hoverItem(item: TitleBarMenuItem): void {
+    this.openSubmenu.set(item.submenu ? item.label : null);
+  }
+
+  /** Referme le sous-menu lorsque le survol quitte le menu déroulant. */
+  protected closeSubmenu(): void {
+    this.openSubmenu.set(null);
   }
 
   protected runItem(event: MouseEvent, item: TitleBarMenuItem): void {

@@ -14,10 +14,15 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Édition → Insérer une image…** : un sélecteur de fichier copie l'image choisie dans `./assets` et insère le lien à la position du curseur.
 - Commandes Rust `save_image` (données base64 du presse-papiers) et `save_image_from_path` (fichier déposé ou sélectionné) ; les noms sont assainis et un suffixe numérique évite d'écraser une image existante.
 - **Correcteur orthographique** : le correcteur natif de la WebView est activé par défaut et se désactive via **Affichage → Vérifier l’orthographe**. La langue suit le système ou peut être fixée au français, à l’anglais, à l’allemand ou à l’espagnol ; le choix est mémorisé et le surlignage syntaxique de l’éditeur reste intact.
+- **Bouton de mode de vue** : une icône unique à côté du bouton de thème indique le mode courant (lecture, édition ou hybride) et permet de passer au suivant d’un clic ; l’info-bulle annonce le mode courant et le suivant.
 
 ### Modifié
 
 - Le protocole `asset:` est activé dans la configuration Tauri et autorisé dans la CSP (`http://asset.localhost`), avec un périmètre limité côté frontend au dossier du document.
+
+### Corrigé
+
+- Les sous-menus de la barre de titre (mode d’affichage, langue du correcteur) se referment dès que le pointeur passe sur un autre élément du menu ou sur un autre menu principal.
 
 ## [2026.10.11] - 2026-10-29
 

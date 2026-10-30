@@ -496,6 +496,16 @@ describe('DocumentService', () => {
     expect(service.mode()).toBe('edit');
   });
 
+  it('reports the next editor mode without changing the current one', () => {
+    service.setMode('read');
+    expect(service.nextMode()).toBe('edit');
+    expect(service.mode()).toBe('read');
+
+    service.setMode('hybrid');
+    expect(service.nextMode()).toBe('read');
+    expect(service.mode()).toBe('hybrid');
+  });
+
   it('marks the content as dirty when edited', () => {
     service.setContent('new content');
     expect(service.content()).toBe('new content');

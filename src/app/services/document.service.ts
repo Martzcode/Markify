@@ -14,6 +14,8 @@ import { renderMarkdownPlain } from '../utils/markdown-render';
 
 export type EditorMode = 'read' | 'edit' | 'hybrid';
 
+const EDITOR_MODES: readonly EditorMode[] = ['read', 'edit', 'hybrid'];
+
 const HISTORY_GROUP_MS = 500;
 
 /** Dernier segment d'un chemin, quel que soit le séparateur. */
@@ -572,6 +574,17 @@ export class DocumentService {
     this.mode.set(mode);
   }
 
+  /** Mode qui sera appliqué au prochain clic sur le bouton de mode. */
+  nextMode(): EditorMode {
+    const index = EDITOR_MODES.indexOf(this.mode());
+    return EDITOR_MODES[(index + 1) % EDITOR_MODES.length];
+  }
+
+  /** Passe au mode suivant : lecture → édition → hybride → lecture. */
+  toggleMode(): void {
+    this.setMode(this.nextMode());
+  }
+
   private exportDefaultName(): string {
     const filePath = this.filePath();
     if (filePath) {
@@ -591,11 +604,5 @@ export class DocumentService {
     }
     const index = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
     return index === -1 ? null : path.slice(0, index);
-  }
-
-  toggleMode(): void {
-    const order: EditorMode[] = ['read', 'edit', 'hybrid'];
-    const index = order.indexOf(this.mode());
-    this.mode.set(order[(index + 1) % order.length]);
   }
 }

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { TitleBar } from './title-bar';
 import { ThemeService } from '../../services/theme.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { DocumentService } from '../../services/document.service';
 
 describe('TitleBar', () => {
   let component: TitleBar;
@@ -150,6 +151,86 @@ describe('TitleBar', () => {
     expect(
       updatedSubmenu!.submenu!.items.find((entry) => entry.label === 'Français')!.checked,
     ).toBe(true);
+  });
+
+  it('closes an open submenu when the pointer moves to another menu or item', () => {
+    const fixture = TestBed.createComponent(TitleBar);
+    fixture.detectChanges();
+    const topMenus = Array.from(fixture.nativeElement.querySelectorAll('.menu')) as HTMLElement[];
+
+    const openViewMenu = () => {
+      topMenus[2]
+        .querySelector('.menu-label')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      fixture.detectChanges();
+    };
+    const hoverModeSubmenu = () => {
+      (fixture.nativeElement.querySelector('.menu-item-submenu') as HTMLElement).dispatchEvent(
+        new MouseEvent('mouseenter'),
+      );
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.menu-dropdown-sub')).not.toBeNull();
+    };
+
+    openViewMenu();
+    hoverModeSubmenu();
+
+    // Un autre élément du même menu referme le sous-menu.
+    const sibling = fixture.nativeElement.querySelector(
+      '.menu-dropdown > button.menu-item',
+    ) as HTMLElement;
+    sibling.dispatchEvent(new MouseEvent('mouseenter'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.menu-dropdown-sub')).toBeNull();
+
+    hoverModeSubmenu();
+
+    // Changer de menu principal referme aussi le sous-menu.
+    topMenus[1].dispatchEvent(new MouseEvent('mouseenter'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.menu-dropdown-sub')).toBeNull();
+    expect(
+      (fixture.componentInstance as unknown as { openSubmenu: () => string | null }).openSubmenu(),
+    ).toBeNull();
+  });
+
+  it('offers a single cycling view-mode button next to the theme switch', () => {
+    localStorage.clear();
+    const document = TestBed.inject(DocumentService);
+    document.setMode('read');
+    const fixture = TestBed.createComponent(TitleBar);
+    fixture.detectChanges();
+
+    const right = fixture.nativeElement.querySelector('.titlebar-right') as HTMLElement;
+    const themeSwitch = right.querySelector('.theme-switch') as HTMLElement;
+    const modeSwitch = right.querySelector('.mode-switch') as HTMLElement;
+    expect(modeSwitch).not.toBeNull();
+    expect(right.children[0]).toBe(themeSwitch);
+    expect(right.children[1]).toBe(modeSwitch);
+
+    const i18n = TestBed.inject(I18nService);
+    const button = modeSwitch.querySelector('.mode-btn') as HTMLButtonElement;
+
+    expect(document.mode()).toBe('read');
+    expect(button.querySelector('.fa-book-open')).not.toBeNull();
+    expect(button.getAttribute('title')).toContain(i18n.t('menu.view.readMode'));
+    expect(button.getAttribute('title')).toContain(i18n.t('menu.view.editMode'));
+
+    button.click();
+    fixture.detectChanges();
+    expect(document.mode()).toBe('edit');
+    expect(button.querySelector('.fa-pen-to-square')).not.toBeNull();
+    expect(button.getAttribute('title')).toContain(i18n.t('menu.view.hybridMode'));
+
+    button.click();
+    fixture.detectChanges();
+    expect(document.mode()).toBe('hybrid');
+    expect(button.querySelector('.fa-table-columns')).not.toBeNull();
+
+    button.click();
+    fixture.detectChanges();
+    expect(document.mode()).toBe('read');
+    expect(button.querySelector('.fa-book-open')).not.toBeNull();
   });
 
   it('offers a single cycling theme button before the window controls', () => {
