@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Markify",
-  "version": "2026.10.11",
+  "version": "2026.10.12",
   "identifier": "com.markify.app",
   "build": {
     "frontendDist": "../dist/markify/browser",
@@ -28,7 +28,9 @@
       "assetProtocol": {
         "enable": true,
         "scope": {
-          "allow": ["**"],
+          "allow": [
+            "**"
+          ],
           "requireLiteralLeadingDot": false
         }
       },
@@ -53,7 +55,7 @@
     },
     "windows": {
       "wix": {
-        "version": "26.10.11"
+        "version": "26.10.12"
       }
     }
   }
