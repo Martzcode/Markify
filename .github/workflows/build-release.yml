@@ -80,8 +80,10 @@ jobs:
               src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
               src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
               src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msix/*.msix
+          # `macos-latest` a basculé vers macOS 26 pendant la migration GitHub ;
+          # l'image stable macOS 15 évite les pénuries de runners de la nouvelle image.
           - name: macos
-            platform: macos-latest
+            platform: macos-15
             bundles: dmg
             args: --target universal-apple-darwin
             targets: aarch64-apple-darwin,x86_64-apple-darwin
