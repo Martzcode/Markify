@@ -1,6 +1,6 @@
 {
   "name": "markify",
-  "version": "2026.10.12",
+  "version": "2026.11.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
