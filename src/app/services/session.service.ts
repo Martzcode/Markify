@@ -1,15 +1,13 @@
-import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { PhysicalSize } from '@tauri-apps/api/dpi';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { I18nService } from '../i18n/i18n.service';
-import { DocumentService, type EditorMode } from './document.service';
 import { ExplorerService } from './explorer.service';
+import { TabsService, type RestorableTab } from './tabs.service';
 import { TocService } from './toc.service';
-import { ToastService } from './toast.service';
 
 export const SESSION_STORAGE_KEY = 'markify.session';
 
-const SESSION_VERSION = 1;
+const SESSION_VERSION = 2;
 const SAVE_DELAY_MS = 500;
 
 export interface ScrollRatios {
@@ -27,20 +25,31 @@ export interface WindowSize {
 
 export interface SessionState {
   version: number;
-  filePath: string | null;
+  tabs: RestorableTab[];
+  activeTab: number;
   folderPath: string | null;
-  mode: EditorMode;
   explorerVisible: boolean;
   tocVisible: boolean;
   expandedPaths: string[];
-  scroll: ScrollRatios;
   window: WindowSize | null;
 }
 
-const MODES: readonly EditorMode[] = ['read', 'edit', 'hybrid'];
-const DEFAULT_SCROLL: ScrollRatios = { editor: 0, preview: 0 };
+/** Ancienne session (version 1) : un seul document ouvert. */
+interface LegacySessionState {
+  version: 1;
+  filePath: string | null;
+  folderPath: string | null;
+  mode: string;
+  explorerVisible: boolean;
+  tocVisible: boolean;
+  expandedPaths: string[];
+  scroll: { editor: number; preview: number };
+  window: WindowSize | null;
+}
 
-function isMode(value: unknown): value is EditorMode {
+const MODES = ['read', 'edit', 'hybrid'] as const;
+
+function isMode(value: unknown): value is (typeof MODES)[number] {
   return typeof value === 'string' && (MODES as readonly string[]).includes(value);
 }
 
@@ -65,15 +74,38 @@ function validWindowSize(value: unknown): WindowSize | null {
   return { width: Math.round(width), height: Math.round(height) };
 }
 
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/);
-  return parts[parts.length - 1] || path;
+function validTab(value: unknown): RestorableTab | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const tab = value as Partial<RestorableTab>;
+  const filePath =
+    typeof tab.filePath === 'string' && tab.filePath.length > 0 ? tab.filePath : null;
+  const content = typeof tab.content === 'string' ? tab.content : null;
+  if (filePath === null && content === null) {
+    return null;
+  }
+  const scroll = (tab.scroll ?? {}) as { editor?: unknown; preview?: unknown };
+  return {
+    filePath,
+    content,
+    isDirty: tab.isDirty === true,
+    mode: isMode(tab.mode) ? tab.mode : 'read',
+    scroll: { editor: ratio(scroll.editor), preview: ratio(scroll.preview) },
+  };
+}
+
+function validTabs(value: unknown): RestorableTab[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map(validTab).filter((tab): tab is RestorableTab => tab !== null);
 }
 
 /**
- * Restaure et persiste l'état de travail entre deux lancements : dernier
- * fichier/dossier, mode de vue, panneaux visibles, dossiers dépliés,
- * position de défilement et taille de la fenêtre.
+ * Restaure et persiste l'état de travail entre deux lancements : onglets
+ * ouverts, dossier, panneaux visibles, dossiers dépliés et taille de la
+ * fenêtre.
  *
  * La position et l'état maximisé de la fenêtre sont gérés par le plugin Tauri
  * `window-state`. La taille, elle, est réappliquée ici : sur Linux/Wayland, le
@@ -82,17 +114,11 @@ function basename(path: string): string {
  */
 @Injectable({ providedIn: 'root' })
 export class SessionService implements OnDestroy {
-  private readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
   private readonly explorer = inject(ExplorerService);
   private readonly toc = inject(TocService);
-  private readonly toast = inject(ToastService);
-  private readonly i18n = inject(I18nService);
   private readonly win = getCurrentWindow();
 
-  /** Défilement à appliquer une fois le document restauré rendu. */
-  readonly pendingScroll = signal<ScrollRatios | null>(null);
-
-  private scroll: ScrollRatios = { ...DEFAULT_SCROLL };
   private windowSize: WindowSize | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private unlistenResize: (() => void) | null = null;
@@ -115,8 +141,8 @@ export class SessionService implements OnDestroy {
   }
 
   /**
-   * Rouvre le dernier document et l'état des panneaux. Ne passe pas par le
-   * garde-fou des modifications (F-01) : rien n'est encore ouvert.
+   * Rouvre les onglets et l'état des panneaux. Ne passe pas par le garde-fou
+   * des modifications (F-01) : rien n'est encore ouvert.
    */
   async restore(): Promise<void> {
     try {
@@ -126,7 +152,6 @@ export class SessionService implements OnDestroy {
         this.startTracking();
         return;
       }
-      this.scroll = state.scroll;
       this.windowSize = state.window;
       await this.applyWindowSize(state.window);
 
@@ -137,16 +162,7 @@ export class SessionService implements OnDestroy {
         this.explorer.reset();
       }
 
-      if (state.filePath) {
-        if (await this.document.restorePath(state.filePath)) {
-          this.document.setMode(state.mode);
-          this.pendingScroll.set(state.scroll);
-        } else {
-          this.toast.show(
-            this.i18n.t('toast.sessionFileMissing', { name: basename(state.filePath) }),
-          );
-        }
-      }
+      await this.tabs.restore(state.tabs, state.activeTab);
 
       if (state.explorerVisible && this.explorer.hasRoot()) {
         this.explorer.show();
@@ -269,28 +285,20 @@ export class SessionService implements OnDestroy {
   }
 
   captureScroll(ratios: Partial<ScrollRatios>): void {
-    const next: ScrollRatios = { ...this.scroll, ...ratios };
-    if (next.editor === this.scroll.editor && next.preview === this.scroll.preview) {
-      return;
+    if (this.tabs.captureScroll(ratios)) {
+      this.scheduleSave();
     }
-    this.scroll = next;
-    this.scheduleSave();
-  }
-
-  clearPendingScroll(): void {
-    this.pendingScroll.set(null);
   }
 
   private snapshot(): SessionState {
     return {
       version: SESSION_VERSION,
-      filePath: this.document.filePath(),
+      tabs: this.tabs.serialize(),
+      activeTab: Math.max(0, this.tabs.activeIndex()),
       folderPath: this.explorer.rootPath(),
-      mode: this.document.mode(),
       explorerVisible: this.explorer.visible(),
       tocVisible: this.toc.visible(),
       expandedPaths: [...this.explorer.expanded()],
-      scroll: this.scroll,
       window: this.windowSize,
     };
   }
@@ -306,28 +314,60 @@ export class SessionService implements OnDestroy {
       return null;
     }
     try {
-      const data = JSON.parse(raw) as Partial<SessionState>;
+      const data = JSON.parse(raw) as Partial<SessionState> & Partial<LegacySessionState>;
+      if (data.version === 1) {
+        return this.migrateLegacy(data);
+      }
       if (data.version !== SESSION_VERSION) {
         return null;
       }
       return {
         version: SESSION_VERSION,
-        filePath: typeof data.filePath === 'string' ? data.filePath : null,
+        tabs: validTabs(data.tabs),
+        activeTab:
+          typeof data.activeTab === 'number' && Number.isFinite(data.activeTab)
+            ? Math.max(0, Math.floor(data.activeTab))
+            : 0,
         folderPath: typeof data.folderPath === 'string' ? data.folderPath : null,
-        mode: isMode(data.mode) ? data.mode : 'read',
         explorerVisible: data.explorerVisible === true,
         tocVisible: data.tocVisible === true,
         expandedPaths: Array.isArray(data.expandedPaths)
           ? data.expandedPaths.filter((entry): entry is string => typeof entry === 'string')
           : [],
-        scroll: {
-          editor: ratio(data.scroll?.editor),
-          preview: ratio(data.scroll?.preview),
-        },
         window: validWindowSize(data.window),
       };
     } catch {
       return null;
     }
+  }
+
+  /** Convertit une session d'avant les onglets en une session à un onglet. */
+  private migrateLegacy(data: Partial<LegacySessionState>): SessionState {
+    const filePath =
+      typeof data.filePath === 'string' && data.filePath.length > 0 ? data.filePath : null;
+    const mode = isMode(data.mode) ? data.mode : 'read';
+    const scroll = (data.scroll ?? {}) as { editor?: unknown; preview?: unknown };
+    return {
+      version: SESSION_VERSION,
+      tabs: filePath
+        ? [
+            {
+              filePath,
+              content: null,
+              isDirty: false,
+              mode,
+              scroll: { editor: ratio(scroll.editor), preview: ratio(scroll.preview) },
+            },
+          ]
+        : [],
+      activeTab: 0,
+      folderPath: typeof data.folderPath === 'string' ? data.folderPath : null,
+      explorerVisible: data.explorerVisible === true,
+      tocVisible: data.tocVisible === true,
+      expandedPaths: Array.isArray(data.expandedPaths)
+        ? data.expandedPaths.filter((entry): entry is string => typeof entry === 'string')
+        : [],
+      window: validWindowSize(data.window),
+    };
   }
 }

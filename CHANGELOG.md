@@ -5,6 +5,24 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.1] - 2026-11-03
+
+### Ajouté
+
+- **Onglets multi-documents** : plusieurs fichiers peuvent désormais rester ouverts en même temps. Une barre d'onglets au-dessus de l'éditeur affiche le nom de chaque fichier, l'onglet actif et un indicateur pour les documents modifiés.
+- **Navigation entre onglets** : `Ctrl/Cmd+N` ouvre un nouvel onglet, `Ctrl/Cmd+O` permet de sélectionner plusieurs fichiers, `Ctrl/Cmd+W` ferme l'onglet actif, et `Ctrl+Tab` / `Ctrl+Shift+Tab` (ou `Ctrl+PageDown` / `Ctrl+PageUp`) passent d'un onglet à l'autre.
+- **Réordonnancement** : les onglets se déplacent par glisser-déposer ; un clic molette les ferme rapidement.
+- **Garde des modifications par onglet** : fermer un onglet modifié propose Enregistrer / Ne pas enregistrer / Annuler, et la fermeture de la fenêtre vérifie tous les onglets modifiés avant de quitter.
+- **Restauration des onglets** : au démarrage, tous les onglets ouverts sont rouverts dans leur ordre et avec l'onglet actif précédent. Les fichiers propres sont relus depuis le disque ; les brouillons modifiés et les documents sans titre conservent leur contenu et leur position de défilement.
+- **Fermeture de dossier** : fermer un dossier ferme aussi les onglets situés sous ce dossier, sans toucher aux fichiers ouverts ailleurs.
+
+### Modifié
+
+- Le format de session passe en version 2 avec migration automatique des anciennes sessions à un seul document.
+- Les actions **Nouveau fichier**, **Ouvrir** et **Fermer l'onglet** du menu Fichier, les raccourcis clavier et l'explorateur passent tous par le gestionnaire d'onglets.
+- Le message de confirmation de fermeture de dossier mentionne désormais l'ensemble des onglets concernés.
+- Nouvelles chaînes traduites en français, anglais, allemand et espagnol.
+
 ## [2026.10.12] - 2026-10-29
 
 ### Ajouté

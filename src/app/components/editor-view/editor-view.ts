@@ -24,6 +24,7 @@ import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService, type ScrollRatios } from '../../services/session.service';
 import { SpellcheckService } from '../../services/spellcheck.service';
+import { TabsService } from '../../services/tabs.service';
 import { TocService } from '../../services/toc.service';
 import { isImagePath } from '../../utils/image-path';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
@@ -60,6 +61,7 @@ export class EditorView implements OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = inject(TocService);
   private readonly session = inject(SessionService);
+  private readonly tabs = inject(TabsService);
   private readonly injector = inject(Injector);
   private readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('input');
   private readonly highlightEl = viewChild<ElementRef<HTMLElement>>('highlight');
@@ -118,17 +120,17 @@ export class EditorView implements OnDestroy {
       }
     });
     effect(() => {
-      const pending = this.session.pendingScroll();
-      if (!pending) {
+      // Chaque onglet mémorise son propre défilement : on ne suit que l'onglet
+      // actif pour ne pas replacer l'éditeur à chaque frappe.
+      const id = this.tabs.activeId();
+      if (id === null) {
         return;
       }
-      afterNextRender(
-        () => {
-          this.applyScroll(pending);
-          this.session.clearPendingScroll();
-        },
-        { injector: this.injector },
-      );
+      const scroll = untracked(() => this.tabs.activeTab()?.scroll);
+      if (!scroll) {
+        return;
+      }
+      afterNextRender(() => this.applyScroll(scroll), { injector: this.injector });
     });
     effect(() => {
       // On ne suit que le jeton de navigation : une simple frappe dans le

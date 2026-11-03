@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { DocumentService } from '../../services/document.service';
 import { ExplorerService, type ExplorerEntry } from '../../services/explorer.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { TabsService } from '../../services/tabs.service';
 
 @Component({
   selector: 'app-explorer-node',
@@ -47,7 +47,7 @@ export class ExplorerNode {
   readonly depth = input(0);
 
   protected readonly explorer = inject(ExplorerService);
-  private readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
 
   protected readonly expanded = computed(() => this.explorer.expanded().has(this.entry().path));
 
@@ -61,7 +61,7 @@ export class ExplorerNode {
       void this.explorer.toggleDir(entry.path);
     } else {
       this.explorer.select(entry.path);
-      void this.document.openPath(entry.path);
+      void this.tabs.openPath(entry.path);
     }
   }
 }

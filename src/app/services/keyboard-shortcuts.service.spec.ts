@@ -7,6 +7,7 @@ import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
 import { KeyboardShortcutsService } from './keyboard-shortcuts.service';
 import { SearchService } from './search.service';
+import { TabsService } from './tabs.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('KeyboardShortcutsService', () => {
@@ -34,15 +35,17 @@ describe('KeyboardShortcutsService', () => {
     return event.defaultPrevented;
   }
 
-  it('creates a new file with Ctrl+N', () => {
-    const spy = vi.spyOn(documentService, 'newFile');
+  it('creates a new tab with Ctrl+N', () => {
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'newTab');
 
     expect(keydown('n', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('opens a file with Ctrl+O', () => {
-    const spy = vi.spyOn(documentService, 'openFile').mockResolvedValue(true);
+  it('opens a file in a new tab with Ctrl+O', () => {
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'openFileDialog').mockResolvedValue(true);
 
     expect(keydown('o', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -56,9 +59,10 @@ describe('KeyboardShortcutsService', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('closes the document with Ctrl+W', () => {
-    documentService.isOpen.set(true);
-    const spy = vi.spyOn(documentService, 'closeFile').mockResolvedValue(true);
+  it('closes the active tab with Ctrl+W', () => {
+    const tabs = TestBed.inject(TabsService);
+    tabs.newTab();
+    const spy = vi.spyOn(tabs, 'closeActive').mockResolvedValue(true);
 
     expect(keydown('w', { ctrlKey: true })).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -71,6 +75,34 @@ describe('KeyboardShortcutsService', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('cycles tabs with Ctrl+Tab and Ctrl+Shift+Tab', () => {
+    const tabs = TestBed.inject(TabsService);
+    tabs.newTab();
+    tabs.newTab();
+    const first = tabs.tabs()[0];
+    tabs.activate(first.id);
+
+    expect(keydown('Tab', { ctrlKey: true })).toBe(true);
+    expect(tabs.activeIndex()).toBe(1);
+
+    expect(keydown('Tab', { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(tabs.activeIndex()).toBe(0);
+  });
+
+  it('cycles tabs with Ctrl+PageDown and Ctrl+PageUp', () => {
+    const tabs = TestBed.inject(TabsService);
+    tabs.newTab();
+    tabs.newTab();
+    const first = tabs.tabs()[0];
+    tabs.activate(first.id);
+
+    expect(keydown('PageDown', { ctrlKey: true })).toBe(true);
+    expect(tabs.activeIndex()).toBe(1);
+
+    expect(keydown('PageUp', { ctrlKey: true })).toBe(true);
+    expect(tabs.activeIndex()).toBe(0);
+  });
+
   it('ignores shortcuts while the confirmation dialog is open', () => {
     const confirm = TestBed.inject(ConfirmService);
     void confirm.confirm({
@@ -79,7 +111,8 @@ describe('KeyboardShortcutsService', () => {
       confirmLabel: 'Close all',
       cancelLabel: 'Cancel',
     });
-    const spy = vi.spyOn(documentService, 'newFile');
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'newTab');
 
     expect(keydown('n', { ctrlKey: true })).toBe(false);
     expect(spy).not.toHaveBeenCalled();
@@ -209,11 +242,12 @@ describe('KeyboardShortcutsService', () => {
 
   it('ignores shortcuts while the unsaved-changes dialog is open', async () => {
     const unsaved = TestBed.inject(UnsavedChangesService);
-    const newFile = vi.spyOn(documentService, 'newFile');
+    const tabs = TestBed.inject(TabsService);
+    const newTab = vi.spyOn(tabs, 'newTab');
     const pending = unsaved.confirm();
 
     expect(keydown('n', { ctrlKey: true })).toBe(false);
-    expect(newFile).not.toHaveBeenCalled();
+    expect(newTab).not.toHaveBeenCalled();
 
     unsaved.resolve('cancel');
     await expect(pending).resolves.toBe('cancel');
@@ -259,7 +293,8 @@ describe('KeyboardShortcutsService', () => {
   it('keeps document shortcuts inactive while typing in the search field', () => {
     const input = document.createElement('input');
     document.body.appendChild(input);
-    const spy = vi.spyOn(documentService, 'newFile');
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'newTab');
 
     expect(keydown('n', { ctrlKey: true }, input)).toBe(false);
     expect(spy).not.toHaveBeenCalled();

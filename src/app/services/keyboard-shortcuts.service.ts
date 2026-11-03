@@ -5,11 +5,13 @@ import { DocumentService } from './document.service';
 import { EditorRefService } from './editor-ref.service';
 import { ExplorerService } from './explorer.service';
 import { SearchService } from './search.service';
+import { TabsService } from './tabs.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 @Injectable({ providedIn: 'root' })
 export class KeyboardShortcutsService implements OnDestroy {
   private readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
   private readonly editorRef = inject(EditorRefService);
   private readonly explorer = inject(ExplorerService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
@@ -58,23 +60,35 @@ export class KeyboardShortcutsService implements OnDestroy {
     }
 
     if (mod && !event.altKey) {
+      // Navigation entre onglets : Ctrl+Tab / Ctrl+Shift+Tab et
+      // Ctrl+PageDown / Ctrl+PageUp.
+      if (key === 'tab') {
+        event.preventDefault();
+        this.tabs.cycle(event.shiftKey ? -1 : 1);
+        return;
+      }
+      if (key === 'pagedown' || key === 'pageup') {
+        event.preventDefault();
+        this.tabs.cycle(key === 'pagedown' ? 1 : -1);
+        return;
+      }
       switch (key) {
         case 'n':
           event.preventDefault();
-          void this.document.newFile();
+          this.tabs.newTab();
           return;
         case 'o':
           event.preventDefault();
           if (event.shiftKey) {
             this.explorer.openFolder();
           } else {
-            void this.document.openFile();
+            void this.tabs.openFileDialog();
           }
           return;
         case 'w':
-          if (this.document.isOpen()) {
+          if (this.tabs.hasTabs() || this.document.isOpen()) {
             event.preventDefault();
-            void this.document.closeFile();
+            void this.tabs.closeActive();
           }
           return;
         case 'b':

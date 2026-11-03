@@ -1,0 +1,40 @@
+<div class="tabs" role="tablist" [attr.aria-label]="i18n.t('tabs.list')">
+  @for (tab of tabs.tabs(); track tab.id; let index = $index) {
+    <div
+      class="tab"
+      role="tab"
+      tabindex="0"
+      draggable="true"
+      [class.active]="tab.id === tabs.activeId()"
+      [attr.aria-selected]="tab.id === tabs.activeId()"
+      [attr.title]="title(tab)"
+      (click)="onSelect(tab.id)"
+      (keydown)="onKeydown($event, tab.id)"
+      (auxclick)="onAuxClick($event, tab.id)"
+      (dragstart)="onDragStart($event, index)"
+      (dragover)="onDragOver($event)"
+      (drop)="onDrop($event, index)"
+      (dragend)="onDragEnd()"
+    >
+      <i class="fa-solid fa-file-lines tab-icon" aria-hidden="true"></i>
+      <span class="tab-name">{{ title(tab) }}</span>
+      @if (tab.isDirty) {
+        <span
+          class="tab-dirty"
+          [attr.title]="i18n.t('tabs.unsaved')"
+          [attr.aria-label]="i18n.t('tabs.unsaved')"
+          >●</span
+        >
+      }
+      <button
+        type="button"
+        class="tab-close"
+        [attr.title]="i18n.t('tabs.close')"
+        [attr.aria-label]="i18n.t('tabs.close')"
+        (click)="onClose($event, tab.id)"
+      >
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+</div>

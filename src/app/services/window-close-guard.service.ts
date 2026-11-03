@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
 import { getCurrentWindow, type CloseRequestedEvent } from '@tauri-apps/api/window';
-import { DocumentService } from './document.service';
 import { SessionService } from './session.service';
+import { TabsService } from './tabs.service';
 
 /**
  * Intercepte la fermeture de la fenêtre (croix, Alt+F4, menu Quitter) pour
@@ -14,7 +14,7 @@ import { SessionService } from './session.service';
  */
 @Injectable({ providedIn: 'root' })
 export class WindowCloseGuardService implements OnDestroy {
-  private readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
   private readonly session = inject(SessionService);
 
   private unlisten: (() => void) | null = null;
@@ -39,7 +39,7 @@ export class WindowCloseGuardService implements OnDestroy {
   }
 
   private async onCloseRequested(event: CloseRequestedEvent): Promise<void> {
-    const canClose = await this.document.confirmDiscardChanges();
+    const canClose = await this.tabs.confirmCloseAll();
     if (!canClose) {
       event.preventDefault();
       return;

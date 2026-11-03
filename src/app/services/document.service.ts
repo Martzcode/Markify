@@ -7,7 +7,7 @@ import { EditorRefService } from './editor-ref.service';
 import { ImageService } from './image.service';
 import { SecurityService } from './security.service';
 import { ToastService } from './toast.service';
-import { UnsavedChangesService } from './unsaved-changes.service';
+import { UnsavedChangesService, type UnsavedChoice } from './unsaved-changes.service';
 import { generatePdf } from '../utils/pdf-export';
 import { imageAltFromPath, isImagePath } from '../utils/image-path';
 import { renderMarkdownPlain } from '../utils/markdown-render';
@@ -49,6 +49,22 @@ interface ImageInsertion {
   alt: string;
 }
 
+/**
+ * État complet d'un document, utilisé par les onglets pour basculer d'un
+ * fichier à l'autre sans perdre le contenu, l'historique ni le mode de vue.
+ */
+export interface DocumentSnapshot {
+  content: string;
+  filePath: string | null;
+  isOpen: boolean;
+  mode: EditorMode;
+  isDirty: boolean;
+  error: string | null;
+  undoStack: string[];
+  redoStack: string[];
+  lastEditAt: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly i18n = inject(I18nService);
@@ -82,6 +98,44 @@ export class DocumentService {
 
   private resetDocument(): void {
     this.clearDocument(true, 'edit');
+  }
+
+  /** Vide le document courant et revient à l'écran d'accueil, sans garde. */
+  reset(): void {
+    this.clearDocument(false, 'read');
+  }
+
+  /** Capture tout l'état du document courant (utilisé par les onglets). */
+  snapshot(): DocumentSnapshot {
+    return {
+      content: this.content(),
+      filePath: this.filePath(),
+      isOpen: this.isOpen(),
+      mode: this.mode(),
+      isDirty: this.isDirty(),
+      error: this.error(),
+      undoStack: [...this.undoStack()],
+      redoStack: [...this.redoStack()],
+      lastEditAt: this.lastEditAt,
+    };
+  }
+
+  /** Applique un état capturé précédemment, sans passer par le garde-fou. */
+  restoreSnapshot(snapshot: DocumentSnapshot): void {
+    this.content.set(snapshot.content);
+    this.filePath.set(snapshot.filePath);
+    this.isOpen.set(snapshot.isOpen);
+    this.mode.set(snapshot.mode);
+    this.isDirty.set(snapshot.isDirty);
+    this.error.set(snapshot.error);
+    this.undoStack.set([...snapshot.undoStack]);
+    this.redoStack.set([...snapshot.redoStack]);
+    this.lastEditAt = snapshot.lastEditAt;
+  }
+
+  /** Lit un fichier sans toucher au document courant (ouverture d'un onglet). */
+  async readFileContent(path: string): Promise<string> {
+    return invoke<string>('read_markdown_file', { path });
   }
 
   /**
@@ -161,17 +215,38 @@ export class DocumentService {
    * modifications, `false` s'il a annulé ou si l'enregistrement a échoué.
    */
   async confirmDiscardChanges(): Promise<boolean> {
-    if (!this.isDirty()) {
-      return true;
-    }
-    const choice = await this.unsavedChanges.confirm();
-    if (choice === 'cancel') {
+    const decision = await this.resolveUnsavedChanges();
+    if (decision === 'cancel') {
       return false;
     }
-    if (choice === 'discard') {
-      return true;
+    if (decision === 'discard') {
+      this.discardChanges();
     }
-    return this.saveFile();
+    return true;
+  }
+
+  /**
+   * Demande à l'utilisateur quoi faire des modifications, sans les abandonner
+   * immédiatement. Permet de confirmer plusieurs onglets avant d'appliquer les
+   * abandons (fermeture de fenêtre).
+   */
+  async resolveUnsavedChanges(): Promise<'clean' | UnsavedChoice> {
+    if (!this.isDirty()) {
+      return 'clean';
+    }
+    const choice = await this.unsavedChanges.confirm();
+    if (choice === 'save') {
+      return (await this.saveFile()) ? 'save' : 'cancel';
+    }
+    return choice;
+  }
+
+  /** Marque le document comme propre et vide un brouillon sans titre. */
+  discardChanges(): void {
+    this.isDirty.set(false);
+    if (!this.filePath()) {
+      this.content.set('');
+    }
   }
 
   async saveFile(): Promise<boolean> {

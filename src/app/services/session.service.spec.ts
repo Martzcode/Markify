@@ -6,12 +6,14 @@ import { vi } from 'vitest';
 import { DocumentService } from './document.service';
 import { ExplorerService } from './explorer.service';
 import { SESSION_STORAGE_KEY, SessionService, type SessionState } from './session.service';
+import { TabsService, type RestorableTab } from './tabs.service';
 import { TocService } from './toc.service';
 import { ToastService } from './toast.service';
 
 describe('SessionService', () => {
   let session: SessionService;
   let document: DocumentService;
+  let tabs: TabsService;
   let explorer: ExplorerService;
   let toc: TocService;
   let toast: ToastService;
@@ -20,6 +22,7 @@ describe('SessionService', () => {
     localStorage.clear();
     session = TestBed.inject(SessionService);
     document = TestBed.inject(DocumentService);
+    tabs = TestBed.inject(TabsService);
     explorer = TestBed.inject(ExplorerService);
     toc = TestBed.inject(TocService);
     toast = TestBed.inject(ToastService);
@@ -34,8 +37,36 @@ describe('SessionService', () => {
   function seed(state: Partial<SessionState>): void {
     localStorage.setItem(
       SESSION_STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        tabs: [],
+        activeTab: 0,
+        folderPath: null,
+        explorerVisible: false,
+        tocVisible: false,
+        expandedPaths: [],
+        window: null,
+        ...state,
+      }),
+    );
+  }
+
+  function seedLegacy(state: Record<string, unknown>): void {
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
       JSON.stringify({ version: 1, scroll: { editor: 0, preview: 0 }, ...state }),
     );
+  }
+
+  function tab(overrides: Partial<RestorableTab> = {}): RestorableTab {
+    return {
+      filePath: null,
+      content: '',
+      isDirty: false,
+      mode: 'read',
+      scroll: { editor: 0, preview: 0 },
+      ...overrides,
+    };
   }
 
   function readSaved(): SessionState | null {
@@ -47,8 +78,8 @@ describe('SessionService', () => {
     await session.restore();
 
     expect(document.isOpen()).toBe(false);
+    expect(tabs.hasTabs()).toBe(false);
     expect(explorer.hasRoot()).toBe(false);
-    expect(session.pendingScroll()).toBeNull();
   });
 
   it('restores the last file, mode, folder and panels', async () => {
@@ -66,24 +97,49 @@ describe('SessionService', () => {
       return Promise.resolve(null);
     }) as unknown as typeof invoke);
     seed({
-      filePath: '/work/sub/notes.md',
+      tabs: [
+        tab({
+          filePath: '/work/sub/notes.md',
+          mode: 'edit',
+          scroll: { editor: 0.42, preview: 0 },
+        }),
+      ],
       folderPath: '/work',
-      mode: 'edit',
       explorerVisible: true,
       expandedPaths: ['/work/sub'],
-      scroll: { editor: 0.42, preview: 0 },
     });
 
     await session.restore();
 
+    expect(tabs.tabs()).toHaveLength(1);
     expect(document.content()).toBe('# Restored');
     expect(document.filePath()).toBe('/work/sub/notes.md');
     expect(document.isOpen()).toBe(true);
     expect(document.mode()).toBe('edit');
+    expect(tabs.activeTab()?.scroll).toEqual({ editor: 0.42, preview: 0 });
     expect(explorer.rootPath()).toBe('/work');
     expect(explorer.visible()).toBe(true);
     expect(explorer.expanded().has('/work/sub')).toBe(true);
-    expect(session.pendingScroll()).toEqual({ editor: 0.42, preview: 0 });
+  });
+
+  it('restores several tabs and keeps the active one', async () => {
+    vi.mocked(invoke).mockImplementation(((command: string, args?: { path?: string }) => {
+      if (command === 'read_markdown_file') {
+        return Promise.resolve(`# ${args?.path}`);
+      }
+      return Promise.resolve([]);
+    }) as unknown as typeof invoke);
+    seed({
+      tabs: [tab({ filePath: '/work/a.md' }), tab({ filePath: '/work/b.md' })],
+      activeTab: 1,
+    });
+
+    await session.restore();
+
+    expect(tabs.tabs()).toHaveLength(2);
+    expect(tabs.activeIndex()).toBe(1);
+    expect(document.filePath()).toBe('/work/b.md');
+    expect(document.content()).toBe('# /work/b.md');
   });
 
   it('restores the table of contents when it was the visible panel', async () => {
@@ -117,15 +173,16 @@ describe('SessionService', () => {
 
   it('falls back to an empty editor when the saved file is gone', async () => {
     vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
-    seed({ filePath: '/gone/notes.md', mode: 'hybrid' });
+    seed({ tabs: [tab({ filePath: '/gone/notes.md', mode: 'hybrid' })] });
 
     await session.restore();
 
     expect(document.isOpen()).toBe(false);
     expect(document.filePath()).toBeNull();
     expect(document.mode()).toBe('read');
+    expect(tabs.hasTabs()).toBe(false);
     expect(toast.message()).toContain('notes.md');
-    expect(readSaved()?.filePath).toBeNull();
+    expect(readSaved()?.tabs).toEqual([]);
   });
 
   it('forgets the explorer when the saved folder is gone', async () => {
@@ -137,6 +194,20 @@ describe('SessionService', () => {
     expect(explorer.hasRoot()).toBe(false);
     expect(explorer.visible()).toBe(false);
     expect(readSaved()?.folderPath).toBeNull();
+  });
+
+  it('migrates a version 1 session to a single tab', async () => {
+    vi.mocked(invoke).mockResolvedValue('# Legacy');
+    seedLegacy({ filePath: '/tmp/legacy.md', mode: 'hybrid' });
+
+    await session.restore();
+
+    expect(tabs.tabs()).toHaveLength(1);
+    expect(tabs.activeIndex()).toBe(0);
+    expect(document.content()).toBe('# Legacy');
+    expect(document.filePath()).toBe('/tmp/legacy.md');
+    expect(document.mode()).toBe('hybrid');
+    expect(readSaved()?.version).toBe(2);
   });
 
   it('ignores a corrupt or outdated session payload', async () => {
@@ -156,28 +227,72 @@ describe('SessionService', () => {
     vi.useFakeTimers();
     await session.restore();
 
+    tabs.newTab();
     document.filePath.set('/tmp/notes.md');
     document.setMode('hybrid');
     session.scheduleSave();
 
-    expect(readSaved()?.filePath).toBeNull();
+    expect(readSaved()?.tabs).toEqual([]);
 
     vi.advanceTimersByTime(600);
 
     const saved = readSaved();
-    expect(saved?.filePath).toBe('/tmp/notes.md');
-    expect(saved?.mode).toBe('hybrid');
+    expect(saved?.tabs).toHaveLength(1);
+    expect(saved?.tabs[0].filePath).toBe('/tmp/notes.md');
+    expect(saved?.tabs[0].mode).toBe('hybrid');
   });
 
   it('flushes pending changes immediately', async () => {
     vi.useFakeTimers();
     await session.restore();
 
+    tabs.newTab();
     document.setMode('edit');
     session.scheduleSave();
     session.flush();
 
-    expect(readSaved()?.mode).toBe('edit');
+    expect(readSaved()?.tabs[0].mode).toBe('edit');
+  });
+
+  it('persists the active tab index and tab order', async () => {
+    vi.useFakeTimers();
+    await session.restore();
+
+    tabs.newTab();
+    tabs.newTab();
+    const first = tabs.tabs()[0];
+    tabs.activate(first.id);
+    session.flush();
+
+    expect(readSaved()?.activeTab).toBe(0);
+    expect(readSaved()?.tabs).toHaveLength(2);
+  });
+
+  it('persists dirty drafts and untitled content', async () => {
+    vi.useFakeTimers();
+    await session.restore();
+
+    tabs.newTab();
+    document.setContent('draft text');
+    session.flush();
+
+    const saved = readSaved();
+    expect(saved?.tabs[0].content).toBe('draft text');
+    expect(saved?.tabs[0].isDirty).toBe(true);
+  });
+
+  it('does not persist the content of a clean saved file', async () => {
+    vi.useFakeTimers();
+    vi.mocked(invoke).mockResolvedValue('# Saved');
+    await session.restore();
+
+    await tabs.openPath('/tmp/notes.md');
+    session.flush();
+
+    const saved = readSaved();
+    expect(saved?.tabs[0].filePath).toBe('/tmp/notes.md');
+    expect(saved?.tabs[0].content).toBeNull();
+    expect(saved?.tabs[0].isDirty).toBe(false);
   });
 
   it('reapplies the saved window size once the window is shown', async () => {
@@ -238,14 +353,15 @@ describe('SessionService', () => {
     expect(readSaved()?.window).toEqual({ width: 1200, height: 800 });
   });
 
-  it('stores scroll positions without writing on every event', async () => {
+  it('stores each tab scroll position without writing on every event', async () => {
     vi.useFakeTimers();
     await session.restore();
 
+    tabs.newTab();
     session.captureScroll({ editor: 0.4 });
     session.captureScroll({ editor: 0.5 });
     vi.advanceTimersByTime(600);
 
-    expect(readSaved()?.scroll).toEqual({ editor: 0.5, preview: 0 });
+    expect(readSaved()?.tabs[0].scroll).toEqual({ editor: 0.5, preview: 0 });
   });
 });

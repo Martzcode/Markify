@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { TitleBar } from './title-bar';
 import { ThemeService } from '../../services/theme.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { DocumentService } from '../../services/document.service';
+import { TabsService } from '../../services/tabs.service';
 
 describe('TitleBar', () => {
   let component: TitleBar;
@@ -37,6 +39,46 @@ describe('TitleBar', () => {
     expect(editMenu.items[2].disabled).toBe(true);
     expect(editMenu.items[3].disabled).toBe(true);
     expect(editMenu.items[4].disabled).toBe(true);
+  });
+
+  it('file menu creates a new tab', () => {
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'newTab');
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+
+    const newFile = menus[0].items.find((item) => item.label.includes('New File'));
+    expect(newFile).toBeDefined();
+    newFile!.action!();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('file menu opens files in new tabs', () => {
+    const tabs = TestBed.inject(TabsService);
+    const spy = vi.spyOn(tabs, 'openFileDialog').mockResolvedValue(true);
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+
+    const openItem = menus[0].items.find(
+      (item) => item.shortcut?.endsWith('O') && !item.shortcut.includes('Shift'),
+    );
+    expect(openItem).toBeDefined();
+    openItem!.action!();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('file menu closes the active tab', () => {
+    const tabs = TestBed.inject(TabsService);
+    tabs.newTab();
+    const spy = vi.spyOn(tabs, 'closeActive').mockResolvedValue(true);
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+
+    const closeItem = menus[0].items.find((item) => item.label.includes('Close tab'));
+    expect(closeItem).toBeDefined();
+    expect(closeItem!.disabled).toBe(false);
+    closeItem!.action!();
+
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('file menu contains an export item disabled while no document is open', () => {

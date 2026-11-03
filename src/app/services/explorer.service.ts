@@ -4,6 +4,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { I18nService } from '../i18n/i18n.service';
 import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
+import { TabsService } from './tabs.service';
 import { TocService } from './toc.service';
 
 export interface ExplorerEntry {
@@ -28,6 +29,7 @@ export class ExplorerService {
   private readonly i18n = inject(I18nService);
   private readonly injector = inject(Injector);
   private readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
   private readonly confirmDialog = inject(ConfirmService);
   private readonly childrenCache = new Map<string, ExplorerEntry[]>();
 
@@ -113,7 +115,7 @@ export class ExplorerService {
    * modifications non enregistrées. Renvoie `false` si l'utilisateur annule.
    */
   async closeFolder(): Promise<boolean> {
-    if (this.document.isOpen()) {
+    if (this.tabs.hasTabs() || this.document.isOpen()) {
       const confirmed = await this.confirmDialog.confirm({
         title: this.i18n.t('confirm.closeFolder.title'),
         message: this.i18n.t('confirm.closeFolder.message', {
@@ -125,7 +127,7 @@ export class ExplorerService {
       if (!confirmed) {
         return false;
       }
-      if (!(await this.document.closeFile())) {
+      if (!(await this.tabs.closeTabsUnder(this.rootPath() ?? ''))) {
         return false;
       }
     }

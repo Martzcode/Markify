@@ -9,6 +9,9 @@
       <app-toc />
     }
     <div class="app-main">
+      @if (tabs.hasTabs()) {
+        <app-tabs-bar />
+      }
       <router-outlet />
       @if (document.isOpen()) {
         <app-editor-view />

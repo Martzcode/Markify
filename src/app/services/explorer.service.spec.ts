@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
 import { ExplorerService } from './explorer.service';
+import { TabsService } from './tabs.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('ExplorerService', () => {
@@ -228,6 +229,30 @@ describe('ExplorerService', () => {
     expect(document.isOpen()).toBe(true);
     expect(document.content()).toBe('draft');
     expect(service.rootPath()).toBe('/work');
+  });
+
+  it('closes the tabs located under the folder', async () => {
+    vi.mocked(invoke).mockImplementation(((command: string, args?: { path?: string }) => {
+      if (command === 'list_directory') {
+        return Promise.resolve([]);
+      }
+      return Promise.resolve(`# ${args?.path}`);
+    }) as unknown as typeof invoke);
+    const tabs = TestBed.inject(TabsService);
+    const confirm = TestBed.inject(ConfirmService);
+    await service.openFolderAt('/work');
+    await tabs.openPath('/work/a.md');
+    await tabs.openPath('/outside/b.md');
+
+    const pending = service.closeFolder();
+    confirm.accept();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await expect(pending).resolves.toBe(true);
+    expect(tabs.tabs()).toHaveLength(1);
+    expect(tabs.activeTab()?.filePath).toBe('/outside/b.md');
+    expect(service.hasRoot()).toBe(false);
+    expect(service.visible()).toBe(false);
   });
 
   it('closes the folder and discards the document on confirmation', async () => {

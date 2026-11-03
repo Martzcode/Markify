@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
-import { DocumentService } from '../../services/document.service';
 import { ExplorerService } from '../../services/explorer.service';
+import { TabsService } from '../../services/tabs.service';
 import { ExplorerNode, Sidebar } from './sidebar';
 
 describe('Sidebar', () => {
@@ -62,8 +62,8 @@ describe('Sidebar', () => {
     const fixture = TestBed.createComponent(Sidebar);
     fixture.detectChanges();
 
-    const docService = TestBed.inject(DocumentService);
-    const openPath = vi.spyOn(docService, 'openPath').mockResolvedValue(true);
+    const tabs = TestBed.inject(TabsService);
+    const openPath = vi.spyOn(tabs, 'openPath').mockResolvedValue(true);
 
     const node = (fixture.nativeElement as HTMLElement).querySelector('.node') as HTMLElement;
     node.click();

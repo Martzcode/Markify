@@ -8,6 +8,7 @@ import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService } from '../../services/session.service';
 import { SpellcheckService } from '../../services/spellcheck.service';
+import { TabsService } from '../../services/tabs.service';
 import { TocService } from '../../services/toc.service';
 
 describe('EditorView', () => {
@@ -247,7 +248,7 @@ describe('EditorView', () => {
     expect(textarea.scrollTop).toBe(250);
   });
 
-  it('applies the pending scroll once the restored document is rendered', () => {
+  it('applies the active tab scroll once the document is rendered', () => {
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
       configurable: true,
       get: () => 1000,
@@ -258,10 +259,11 @@ describe('EditorView', () => {
     });
     try {
       const document = TestBed.inject(DocumentService);
-      const session = TestBed.inject(SessionService);
+      const tabs = TestBed.inject(TabsService);
+      tabs.newTab();
       document.setContent('# Title\n\nSome text');
       document.setMode('edit');
-      session.pendingScroll.set({ editor: 0.5, preview: 0 });
+      tabs.captureScroll({ editor: 0.5, preview: 0 });
 
       const fixture = TestBed.createComponent(EditorView);
       fixture.detectChanges();
@@ -269,7 +271,6 @@ describe('EditorView', () => {
 
       const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
       expect(textarea.scrollTop).toBe(250);
-      expect(session.pendingScroll()).toBeNull();
     } finally {
       delete (HTMLElement.prototype as unknown as Record<string, unknown>)['scrollHeight'];
       delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];

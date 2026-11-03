@@ -5,6 +5,7 @@ import { ActivityBar } from './components/activity-bar/activity-bar';
 import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog';
 import { EditorView } from './components/editor-view/editor-view';
 import { Sidebar } from './components/sidebar/sidebar';
+import { TabsBar } from './components/tabs-bar/tabs-bar';
 import { Toc } from './components/toc/toc';
 import { TitleBar } from './components/title-bar/title-bar';
 import { UnsavedChangesDialog } from './components/unsaved-changes-dialog/unsaved-changes-dialog';
@@ -15,6 +16,7 @@ import { DocumentService } from './services/document.service';
 import { ExplorerService } from './services/explorer.service';
 import { KeyboardShortcutsService } from './services/keyboard-shortcuts.service';
 import { SessionService } from './services/session.service';
+import { TabsService } from './services/tabs.service';
 import { ToastService } from './services/toast.service';
 import { TocService } from './services/toc.service';
 import { UnsavedChangesService } from './services/unsaved-changes.service';
@@ -27,6 +29,7 @@ import { WindowCloseGuardService } from './services/window-close-guard.service';
     TitleBar,
     EditorView,
     Sidebar,
+    TabsBar,
     Toc,
     ActivityBar,
     AboutDialog,
@@ -42,6 +45,7 @@ export class App {
   private readonly session = inject(SessionService);
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
+  protected readonly tabs = inject(TabsService);
   protected readonly explorer = inject(ExplorerService);
   protected readonly toc = inject(TocService);
   protected readonly toast = inject(ToastService);
@@ -71,6 +75,8 @@ export class App {
       // Toute modification de l'état de travail est persistée (debounce).
       this.document.filePath();
       this.document.mode();
+      this.tabs.tabs();
+      this.tabs.activeId();
       this.explorer.visible();
       this.explorer.rootPath();
       this.explorer.expanded();

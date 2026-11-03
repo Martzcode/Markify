@@ -18,6 +18,7 @@ import { ExplorerService } from '../../services/explorer.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SPELLCHECK_LANGUAGES, SpellcheckService } from '../../services/spellcheck.service';
+import { TabsService } from '../../services/tabs.service';
 import { ThemeService } from '../../services/theme.service';
 
 export interface TitleBarMenuItem {
@@ -44,6 +45,7 @@ export class TitleBar implements OnDestroy {
   private readonly element = inject(ElementRef<HTMLElement>);
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
+  private readonly tabs = inject(TabsService);
   private readonly editorRef = inject(EditorRefService);
   private readonly aboutDialog = inject(AboutDialogService);
   private readonly codeBlocks = inject(CodeBlockService);
@@ -69,12 +71,12 @@ export class TitleBar implements OnDestroy {
         {
           label: this.i18n.t('menu.file.new'),
           shortcut: `${this.modKey}N`,
-          action: () => this.document.newFile(),
+          action: () => this.tabs.newTab(),
         },
         {
           label: this.i18n.t('menu.file.open'),
           shortcut: `${this.modKey}O`,
-          action: () => this.document.openFile(),
+          action: () => this.tabs.openFileDialog(),
         },
         {
           label: this.i18n.t('menu.file.openFolder'),
@@ -90,7 +92,7 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.file.close'),
           shortcut: `${this.modKey}W`,
           disabled: !this.document.isOpen(),
-          action: () => this.document.closeFile(),
+          action: () => this.tabs.closeActive(),
         },
         {
           label: this.i18n.t('menu.file.save'),
