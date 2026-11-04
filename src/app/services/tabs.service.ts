@@ -281,6 +281,37 @@ export class TabsService {
     this.tabs.set(tabs);
   }
 
+  /**
+   * Met à jour les chemins des onglets après un renommage ou un déplacement.
+   * Le document actif est corrigé aussi pour que les enregistrements suivants
+   * visent le nouveau chemin.
+   */
+  rebasePath(oldPath: string, newPath: string): void {
+    const from = norm(oldPath);
+    const to = norm(newPath);
+    const separator = to.includes('\\') ? '\\' : '/';
+    const rebase = (path: string): string => {
+      const normalized = norm(path);
+      if (normalized === from) {
+        return newPath;
+      }
+      if (normalized.startsWith(from + '/')) {
+        return to + separator + normalized.slice(from.length + 1);
+      }
+      return path;
+    };
+
+    this.tabs.update((tabs) =>
+      tabs.map((tab) =>
+        tab.filePath === null ? tab : { ...tab, filePath: rebase(tab.filePath) },
+      ),
+    );
+    const current = this.document.filePath();
+    if (current !== null) {
+      this.document.filePath.set(rebase(current));
+    }
+  }
+
   /** Mémorise la position de défilement de l'onglet actif. */
   captureScroll(ratios: Partial<ScrollRatios>): boolean {
     const id = this.activeId();

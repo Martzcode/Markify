@@ -85,7 +85,7 @@ describe('Sidebar', () => {
     fixture.detectChanges();
 
     const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('.sidebar-action');
-    (buttons[0] as HTMLElement).click();
+    (buttons[2] as HTMLElement).click();
 
     expect(explorer.hasRoot()).toBe(false);
     expect(explorer.rootPath()).toBeNull();
@@ -109,5 +109,64 @@ describe('Sidebar', () => {
     await fixture.whenStable();
 
     expect(explorer.expanded().has('/workspace/docs')).toBe(true);
+  });
+
+  it('opens a context menu on right click', () => {
+    explorer.visible.set(true);
+    explorer.rootPath.set('/workspace');
+    explorer.rootEntries.set([
+      { name: 'README.md', path: '/workspace/README.md', isDir: false, children: [] },
+    ]);
+    explorer.expanded.set(new Set(['/workspace']));
+
+    const fixture = TestBed.createComponent(Sidebar);
+    fixture.detectChanges();
+
+    const node = (fixture.nativeElement as HTMLElement).querySelector('.node') as HTMLElement;
+    node.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 20 }));
+    fixture.detectChanges();
+
+    const menu = (fixture.nativeElement as HTMLElement).querySelector('.context-menu');
+    expect(explorer.contextMenu()?.entry?.path).toBe('/workspace/README.md');
+    expect(menu?.textContent).toContain('Rename');
+    expect(menu?.textContent).toContain('Move to Trash');
+  });
+
+  it('starts an inline creation from the header button', async () => {
+    explorer.visible.set(true);
+    explorer.rootPath.set('/workspace');
+    explorer.rootEntries.set([]);
+    explorer.expanded.set(new Set(['/workspace']));
+
+    const fixture = TestBed.createComponent(Sidebar);
+    fixture.detectChanges();
+
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('.sidebar-action');
+    (buttons[0] as HTMLElement).click();
+
+    await vi.waitFor(() =>
+      expect(explorer.creating()).toEqual({ parentPath: '/workspace', isDir: false }),
+    );
+  });
+
+  it('renders an inline input and commits the entered name', async () => {
+    explorer.visible.set(true);
+    explorer.rootPath.set('/workspace');
+    explorer.rootEntries.set([]);
+    explorer.expanded.set(new Set(['/workspace']));
+    explorer.creating.set({ parentPath: '/workspace', isDir: false });
+    const commit = vi.spyOn(explorer, 'commitCreate').mockResolvedValue(true);
+
+    const fixture = TestBed.createComponent(Sidebar);
+    fixture.detectChanges();
+
+    const input = (fixture.nativeElement as HTMLElement).querySelector(
+      '.node-input',
+    ) as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'note';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(commit).toHaveBeenCalledWith('note');
   });
 });

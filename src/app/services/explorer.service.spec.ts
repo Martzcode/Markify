@@ -1,11 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { invoke } from '@tauri-apps/api/core';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { open } from '@tauri-apps/plugin-dialog';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { vi } from 'vitest';
+import { I18nService } from '../i18n/i18n.service';
 import { ConfirmService } from './confirm.service';
 import { DocumentService } from './document.service';
 import { ExplorerService } from './explorer.service';
 import { TabsService } from './tabs.service';
+import { ToastService } from './toast.service';
 import { UnsavedChangesService } from './unsaved-changes.service';
 
 describe('ExplorerService', () => {
@@ -277,5 +281,244 @@ describe('ExplorerService', () => {
     expect(document.filePath()).toBeNull();
     expect(service.hasRoot()).toBe(false);
     expect(service.visible()).toBe(false);
+  });
+
+  it('creates a file inline and opens it in a tab', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    vi.mocked(invoke).mockImplementation((async (command: string, args?: unknown) => {
+      const request = args as { parent?: string; name?: string; path?: string };
+      if (command === 'create_entry') {
+        return `${request.parent}/${request.name}`;
+      }
+      if (command === 'read_markdown_file') {
+        return '';
+      }
+      return [];
+    }) as unknown as typeof invoke);
+    const tabs = TestBed.inject(TabsService);
+    const openTab = vi.spyOn(tabs, 'openPath').mockResolvedValue(true);
+
+    await service.beginCreate('/workspace', false);
+    await expect(service.commitCreate('note')).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith('create_entry', {
+      parent: '/workspace',
+      name: 'note.md',
+      isDir: false,
+    });
+    expect(openTab).toHaveBeenCalledWith('/workspace/note.md');
+    expect(service.creating()).toBeNull();
+    expect(service.selectedPath()).toBe('/workspace/note.md');
+  });
+
+  it('creates a folder inline without opening a tab', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    vi.mocked(invoke).mockImplementation((async (command: string) => {
+      if (command === 'create_entry') {
+        return '/workspace/docs';
+      }
+      return [];
+    }) as unknown as typeof invoke);
+    const tabs = TestBed.inject(TabsService);
+    const openTab = vi.spyOn(tabs, 'openPath').mockResolvedValue(true);
+
+    await service.beginCreate('/workspace', true);
+    await expect(service.commitCreate('docs')).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith('create_entry', {
+      parent: '/workspace',
+      name: 'docs',
+      isDir: true,
+    });
+    expect(openTab).not.toHaveBeenCalled();
+  });
+
+  it('renames an entry and updates the open tab path', async () => {
+    vi.mocked(invoke).mockImplementation((async (command: string) => {
+      if (command === 'read_markdown_file') {
+        return '# note';
+      }
+      if (command === 'rename_entry') {
+        return '/workspace/renamed.md';
+      }
+      return [];
+    }) as unknown as typeof invoke);
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    const tabs = TestBed.inject(TabsService);
+    await tabs.openPath('/workspace/note.md');
+
+    service.beginRename({
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    });
+    await expect(service.commitRename('renamed')).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith('rename_entry', {
+      path: '/workspace/note.md',
+      newName: 'renamed.md',
+    });
+    expect(tabs.tabs()[0].filePath).toBe('/workspace/renamed.md');
+    expect(service.renaming()).toBeNull();
+  });
+
+  it('duplicates an entry and keeps the original', async () => {
+    vi.mocked(invoke).mockImplementation((async (command: string) => {
+      if (command === 'duplicate_entry') {
+        return '/workspace/note-copie.md';
+      }
+      return [];
+    }) as unknown as typeof invoke);
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+
+    await expect(
+      service.duplicate({ name: 'note.md', path: '/workspace/note.md', isDir: false, children: [] }),
+    ).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith(
+      'duplicate_entry',
+      expect.objectContaining({ path: '/workspace/note.md', suffix: expect.any(String) }),
+    );
+    expect(service.selectedPath()).toBe('/workspace/note-copie.md');
+  });
+
+  it('deletes an entry after confirmation and refreshes the folder', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([
+      { name: 'note.md', path: '/workspace/note.md', isDir: false, children: [] },
+    ]);
+    service.expanded.set(new Set(['/workspace']));
+    service.selectedPath.set('/workspace/note.md');
+    const confirm = TestBed.inject(ConfirmService);
+    vi.mocked(invoke).mockImplementation((async (command: string) => {
+      if (command === 'delete_entry') {
+        return undefined;
+      }
+      return [];
+    }) as unknown as typeof invoke);
+
+    const pending = service.remove({
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    });
+    confirm.accept();
+    await expect(pending).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith('delete_entry', { path: '/workspace/note.md' });
+    expect(service.rootEntries()).toEqual([]);
+    expect(service.selectedPath()).toBeNull();
+  });
+
+  it('keeps the entry when the delete confirmation is cancelled', async () => {
+    service.rootPath.set('/workspace');
+    const confirm = TestBed.inject(ConfirmService);
+
+    const pending = service.remove({
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    });
+    confirm.cancel();
+    await expect(pending).resolves.toBe(false);
+
+    expect(invoke).not.toHaveBeenCalledWith('delete_entry', expect.anything());
+  });
+
+  it('reveals an entry in the system file manager', async () => {
+    await service.reveal({
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    });
+
+    expect(revealItemInDir).toHaveBeenCalledWith('/workspace/note.md');
+  });
+
+  it('copies an entry path to the clipboard', async () => {
+    TestBed.inject(I18nService).setLang('en');
+    await service.copyPath({
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    });
+
+    expect(writeText).toHaveBeenCalledWith('/workspace/note.md');
+    expect(TestBed.inject(ToastService).message()).toBe('Path copied');
+  });
+
+  it('refreshes the root and expanded folders from disk', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace', '/workspace/docs']));
+    vi.mocked(invoke).mockImplementation((async (command: string, args?: unknown) => {
+      const path = (args as { path?: string } | undefined)?.path ?? '';
+      if (path === '/workspace/docs') {
+        return [{ name: 'guide.md', path: '/workspace/docs/guide.md', isDir: false, children: [] }];
+      }
+      return [{ name: 'docs', path: '/workspace/docs', isDir: true, children: [] }];
+    }) as unknown as typeof invoke);
+
+    await service.refresh();
+
+    expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/workspace' });
+    expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/workspace/docs' });
+    expect(service.rootEntries()).toHaveLength(1);
+    expect(service.childrenOf('/workspace/docs')).toHaveLength(1);
+    expect(service.isExpanded('/workspace/docs')).toBe(true);
+  });
+
+  it('moves a dragged entry into a folder', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    const entry = {
+      name: 'note.md',
+      path: '/workspace/note.md',
+      isDir: false,
+      children: [],
+    };
+    vi.mocked(invoke).mockImplementation((async (command: string) => {
+      if (command === 'move_entry') {
+        return '/workspace/docs/note.md';
+      }
+      return [];
+    }) as unknown as typeof invoke);
+
+    service.beginDrag(entry);
+    expect(service.canDropOn('/workspace/docs')).toBe(true);
+    expect(service.canDropOn('/workspace')).toBe(false);
+    await expect(service.dropOn('/workspace/docs')).resolves.toBe(true);
+
+    expect(invoke).toHaveBeenCalledWith('move_entry', {
+      path: '/workspace/note.md',
+      targetDir: '/workspace/docs',
+    });
+    expect(service.selectedPath()).toBe('/workspace/docs/note.md');
+    expect(service.dragged()).toBeNull();
+  });
+
+  it('refuses to drop a folder inside itself', () => {
+    service.beginDrag({
+      name: 'docs',
+      path: '/workspace/docs',
+      isDir: true,
+      children: [],
+    });
+
+    expect(service.canDropOn('/workspace/docs/nested')).toBe(false);
   });
 });

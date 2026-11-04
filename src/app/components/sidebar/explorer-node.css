@@ -22,6 +22,31 @@
   color: #ffffff;
 }
 
+.node-drop {
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--titlebar-hover-bg);
+}
+
+.node-editing {
+  padding-right: 8px;
+}
+
+.node-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .node-caret {
   display: flex;
   align-items: center;

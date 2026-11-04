@@ -1,9 +1,27 @@
-<aside class="sidebar">
+<aside class="sidebar" (contextmenu)="onContextMenu($event, null)">
   <div class="sidebar-header">
     <span class="sidebar-title" [title]="explorer.rootPath() ?? ''">
       {{ explorer.rootName() }}
     </span>
     <div class="sidebar-actions">
+      <button
+        type="button"
+        class="sidebar-action"
+        [title]="i18n.t('explorer.newFile')"
+        [attr.aria-label]="i18n.t('explorer.newFile')"
+        (click)="newFile()"
+      >
+        <i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="sidebar-action"
+        [title]="i18n.t('explorer.refresh')"
+        [attr.aria-label]="i18n.t('explorer.refresh')"
+        (click)="refresh()"
+      >
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+      </button>
       <button
         type="button"
         class="sidebar-action"
@@ -29,10 +47,94 @@
   } @else if (explorer.error(); as error) {
     <div class="sidebar-status sidebar-error">{{ error }}</div>
   } @else {
-    <div class="sidebar-tree">
+    <div
+      class="sidebar-tree"
+      [class.tree-drop]="explorer.rootPath() !== null && explorer.isDragOver(explorer.rootPath() ?? '')"
+      (dragover)="onRootDragOver($event)"
+      (dragleave)="onRootDragLeave()"
+      (drop)="onRootDrop($event)"
+    >
+      @if (explorer.rootPath(); as root) {
+        @if (explorer.isCreatingIn(root)) {
+          <app-explorer-name-input
+            [isDir]="explorer.creating()?.isDir ?? false"
+            [depth]="0"
+            [placeholder]="i18n.t('explorer.namePlaceholder')"
+            (commit)="explorer.commitCreate($event)"
+            (cancel)="explorer.cancelCreate()"
+          />
+        }
+      }
       @for (entry of explorer.rootEntries(); track entry.path) {
         <app-explorer-node [entry]="entry" [depth]="0" />
       }
     </div>
   }
 </aside>
+
+@if (explorer.contextMenu(); as menu) {
+  <div
+    class="context-backdrop"
+    (click)="explorer.closeContextMenu()"
+    (contextmenu)="$event.preventDefault(); explorer.closeContextMenu()"
+  ></div>
+  <div
+    class="context-menu"
+    role="menu"
+    tabindex="-1"
+    appAutoFocus
+    [style.left.px]="menu.x"
+    [style.top.px]="menu.y"
+    (keydown.escape)="explorer.closeContextMenu()"
+  >
+    @if (menu.entry; as entry) {
+      @if (!entry.isDir) {
+        <button type="button" class="context-item" role="menuitem" (click)="menuOpen()">
+          <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+          <span>{{ i18n.t('explorer.open') }}</span>
+        </button>
+        <div class="context-separator"></div>
+      }
+    }
+    @if (!menu.entry || menu.entry.isDir) {
+      <button type="button" class="context-item" role="menuitem" (click)="menuNewFile()">
+        <i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i>
+        <span>{{ i18n.t('explorer.newFile') }}</span>
+      </button>
+      <button type="button" class="context-item" role="menuitem" (click)="menuNewFolder()">
+        <i class="fa-solid fa-folder-plus" aria-hidden="true"></i>
+        <span>{{ i18n.t('explorer.newFolder') }}</span>
+      </button>
+      <div class="context-separator"></div>
+    }
+    @if (menu.entry; as entry) {
+      <button type="button" class="context-item" role="menuitem" (click)="menuRename()">
+        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+        <span>{{ i18n.t('explorer.rename') }}</span>
+      </button>
+      <button type="button" class="context-item" role="menuitem" (click)="menuDuplicate()">
+        <i class="fa-solid fa-copy" aria-hidden="true"></i>
+        <span>{{ i18n.t('explorer.duplicate') }}</span>
+      </button>
+      <button type="button" class="context-item" role="menuitem" (click)="menuDelete()">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+        <span>{{ i18n.t('explorer.delete') }}</span>
+        <span class="context-hint">{{ entry.name }}</span>
+      </button>
+      <div class="context-separator"></div>
+    }
+    <button type="button" class="context-item" role="menuitem" (click)="menuReveal()">
+      <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>
+      <span>{{ i18n.t('explorer.reveal') }}</span>
+    </button>
+    <button type="button" class="context-item" role="menuitem" (click)="menuCopyPath()">
+      <i class="fa-solid fa-link" aria-hidden="true"></i>
+      <span>{{ i18n.t('explorer.copyPath') }}</span>
+    </button>
+    <div class="context-separator"></div>
+    <button type="button" class="context-item" role="menuitem" (click)="menuRefresh()">
+      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+      <span>{{ i18n.t('explorer.refresh') }}</span>
+    </button>
+  </div>
+}

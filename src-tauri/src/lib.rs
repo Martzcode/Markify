@@ -45,6 +45,216 @@ fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
   Ok(entries)
 }
 
+/// Vérifie qu'un nom saisi par l'utilisateur ne peut pas sortir du dossier
+/// courant ni écraser une entrée existante par un chemin relatif.
+fn validate_entry_name(name: &str) -> Result<String, String> {
+  let trimmed = name.trim();
+  if trimmed.is_empty() {
+    return Err("Le nom ne peut pas être vide".to_string());
+  }
+  if trimmed == "." || trimmed == ".." {
+    return Err("Ce nom n'est pas autorisé".to_string());
+  }
+  if trimmed.contains('/') || trimmed.contains('\\') || trimmed.contains('\0') {
+    return Err("Le nom ne peut pas contenir de séparateur de dossier".to_string());
+  }
+  Ok(trimmed.to_string())
+}
+
+fn entry_path(parent: &str, name: &str) -> Result<std::path::PathBuf, String> {
+  let name = validate_entry_name(name)?;
+  Ok(std::path::Path::new(parent).join(name))
+}
+
+/// Crée un fichier Markdown vide ou un dossier dans `parent`.
+#[tauri::command]
+fn create_entry(parent: String, name: String, is_dir: bool) -> Result<String, String> {
+  let path = entry_path(&parent, &name)?;
+  if path.exists() {
+    return Err("Une entrée de ce nom existe déjà".to_string());
+  }
+  if is_dir {
+    std::fs::create_dir(&path).map_err(|err| err.to_string())?;
+  } else {
+    std::fs::File::create(&path).map_err(|err| err.to_string())?;
+  }
+  Ok(path.to_string_lossy().into_owned())
+}
+
+/// Renomme une entrée sans la déplacer dans un autre dossier.
+#[tauri::command]
+fn rename_entry(path: String, new_name: String) -> Result<String, String> {
+  let source = std::path::PathBuf::from(&path);
+  if !source.exists() {
+    return Err("L'entrée est introuvable".to_string());
+  }
+  let parent = source
+    .parent()
+    .ok_or_else(|| "L'entrée n'a pas de dossier parent".to_string())?;
+  let target = entry_path(&parent.to_string_lossy(), &new_name)?;
+  if target == source {
+    return Ok(path);
+  }
+  if target.exists() {
+    return Err("Une entrée de ce nom existe déjà".to_string());
+  }
+  std::fs::rename(&source, &target).map_err(|err| err.to_string())?;
+  Ok(target.to_string_lossy().into_owned())
+}
+
+fn sanitize_copy_suffix(suffix: &str) -> String {
+  let cleaned: String = suffix
+    .trim()
+    .chars()
+    .map(|character| {
+      if character.is_alphanumeric() || character == '-' || character == '_' {
+        character
+      } else {
+        '-'
+      }
+    })
+    .collect();
+  if cleaned.is_empty() {
+    "copy".to_string()
+  } else {
+    cleaned
+  }
+}
+
+/// Construit un chemin libre : `note-copie.md`, puis `note-copie-1.md`.
+fn unique_path(
+  parent: &std::path::Path,
+  stem: &str,
+  extension: Option<&str>,
+) -> std::path::PathBuf {
+  let compose = |index: usize| {
+    let candidate = match extension {
+      Some(extension) if !extension.is_empty() => format!("{stem}.{extension}"),
+      _ => stem.to_string(),
+    };
+    let candidate = if index == 0 {
+      candidate
+    } else {
+      match extension {
+        Some(extension) if !extension.is_empty() => format!("{stem}-{index}.{extension}"),
+        _ => format!("{stem}-{index}"),
+      }
+    };
+    parent.join(candidate)
+  };
+  let mut index = 0;
+  loop {
+    let candidate = compose(index);
+    if !candidate.exists() {
+      return candidate;
+    }
+    index += 1;
+  }
+}
+
+fn copy_dir_all(source: &std::path::Path, target: &std::path::Path) -> Result<(), String> {
+  std::fs::create_dir(target).map_err(|err| err.to_string())?;
+  for entry in std::fs::read_dir(source).map_err(|err| err.to_string())? {
+    let entry = entry.map_err(|err| err.to_string())?;
+    let file_type = entry.file_type().map_err(|err| err.to_string())?;
+    let destination = target.join(entry.file_name());
+    if file_type.is_dir() {
+      copy_dir_all(&entry.path(), &destination)?;
+    } else if file_type.is_file() {
+      std::fs::copy(entry.path(), &destination).map_err(|err| err.to_string())?;
+    }
+  }
+  Ok(())
+}
+
+/// Duplique un fichier ou un dossier à côté de l'original, sans écraser.
+#[tauri::command]
+fn duplicate_entry(path: String, suffix: String) -> Result<String, String> {
+  let source = std::path::PathBuf::from(&path);
+  if !source.exists() {
+    return Err("L'entrée est introuvable".to_string());
+  }
+  let parent = source
+    .parent()
+    .ok_or_else(|| "L'entrée n'a pas de dossier parent".to_string())?;
+  let stem = source
+    .file_stem()
+    .and_then(|value| value.to_str())
+    .unwrap_or("copy");
+  let extension = source.extension().and_then(|value| value.to_str());
+  let suffix = sanitize_copy_suffix(&suffix);
+  let target = unique_path(parent, &format!("{stem}-{suffix}"), extension);
+  if source.is_dir() {
+    copy_dir_all(&source, &target)?;
+  } else {
+    std::fs::copy(&source, &target).map_err(|err| err.to_string())?;
+  }
+  Ok(target.to_string_lossy().into_owned())
+}
+
+/// Envoie un fichier ou un dossier à la corbeille du système d'exploitation.
+#[tauri::command]
+fn delete_entry(path: String) -> Result<(), String> {
+  let target = std::path::PathBuf::from(&path);
+  if !target.exists() {
+    return Err("L'entrée est introuvable".to_string());
+  }
+  trash::delete(&target).map_err(|err| err.to_string())
+}
+
+fn move_path(source: &std::path::Path, target: &std::path::Path) -> Result<(), String> {
+  if std::fs::rename(source, target).is_ok() {
+    return Ok(());
+  }
+  // Renommage impossible (par exemple entre deux volumes) : copie puis
+  // suppression de la source.
+  if source.is_dir() {
+    copy_dir_all(source, target)?;
+    std::fs::remove_dir_all(source).map_err(|err| err.to_string())?;
+  } else {
+    std::fs::copy(source, target).map_err(|err| err.to_string())?;
+    std::fs::remove_file(source).map_err(|err| err.to_string())?;
+  }
+  Ok(())
+}
+
+/// Déplace une entrée dans un dossier (glisser-déposer de l'explorateur).
+#[tauri::command]
+fn move_entry(path: String, target_dir: String) -> Result<String, String> {
+  let source = std::path::PathBuf::from(&path);
+  if !source.exists() {
+    return Err("L'entrée est introuvable".to_string());
+  }
+  let target_dir = std::path::PathBuf::from(&target_dir);
+  if !target_dir.is_dir() {
+    return Err("La destination n'est pas un dossier".to_string());
+  }
+  let name = source
+    .file_name()
+    .ok_or_else(|| "L'entrée n'a pas de nom".to_string())?;
+  let target = target_dir.join(name);
+
+  let canonical_source = std::fs::canonicalize(&source).map_err(|err| err.to_string())?;
+  let canonical_target_dir =
+    std::fs::canonicalize(&target_dir).map_err(|err| err.to_string())?;
+  if canonical_target_dir == canonical_source
+    || (source.is_dir() && canonical_target_dir.starts_with(&canonical_source))
+  {
+    return Err("Impossible de déplacer un dossier dans lui-même".to_string());
+  }
+  if source.parent().is_some_and(|parent| {
+    std::fs::canonicalize(parent).is_ok_and(|parent| parent == canonical_target_dir)
+  }) {
+    return Ok(path);
+  }
+  if target.exists() {
+    return Err("Une entrée de ce nom existe déjà dans le dossier".to_string());
+  }
+
+  move_path(&source, &target)?;
+  Ok(target.to_string_lossy().into_owned())
+}
+
 #[tauri::command]
 fn write_markdown_file(path: String, content: String) -> Result<(), String> {
   std::fs::write(&path, content).map_err(|err| err.to_string())
@@ -835,6 +1045,179 @@ mod tests {
     assert!(error.contains("pas une image"));
     std::fs::remove_dir_all(root).unwrap();
   }
+
+  #[test]
+  fn creates_files_and_folders_in_a_parent() {
+    let dir = std::env::temp_dir().join(format!("markify-create-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+
+    let file = create_entry(
+      dir.to_string_lossy().into_owned(),
+      "note.md".to_string(),
+      false,
+    )
+    .unwrap();
+    let folder = create_entry(
+      dir.to_string_lossy().into_owned(),
+      "docs".to_string(),
+      true,
+    )
+    .unwrap();
+
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "");
+    assert!(std::path::Path::new(&folder).is_dir());
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn refuses_to_create_an_existing_entry() {
+    let dir = std::env::temp_dir().join(format!("markify-create-exists-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("note.md"), "hello").unwrap();
+
+    let error = create_entry(
+      dir.to_string_lossy().into_owned(),
+      "note.md".to_string(),
+      false,
+    )
+    .unwrap_err();
+
+    assert!(error.contains("existe déjà"));
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn rejects_names_with_path_separators() {
+    let dir = std::env::temp_dir().join(format!("markify-create-safe-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+
+    for name in ["../evil.md", "sub/evil.md", "sub\\evil.md", "..", "  "] {
+      assert!(create_entry(dir.to_string_lossy().into_owned(), name.to_string(), false).is_err());
+    }
+    assert!(!dir.join("evil.md").exists());
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn renames_an_entry_in_the_same_folder() {
+    let dir = std::env::temp_dir().join(format!("markify-rename-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = dir.join("before.md");
+    std::fs::write(&source, "content").unwrap();
+
+    let renamed = rename_entry(
+      source.to_string_lossy().into_owned(),
+      "after.md".to_string(),
+    )
+    .unwrap();
+
+    assert_eq!(
+      std::path::Path::new(&renamed),
+      dir.join("after.md"),
+    );
+    assert!(!source.exists());
+    assert_eq!(std::fs::read_to_string(dir.join("after.md")).unwrap(), "content");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn refuses_to_rename_onto_an_existing_entry() {
+    let dir = std::env::temp_dir().join(format!("markify-rename-busy-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = dir.join("a.md");
+    std::fs::write(&source, "a").unwrap();
+    std::fs::write(dir.join("b.md"), "b").unwrap();
+
+    let error = rename_entry(source.to_string_lossy().into_owned(), "b.md".to_string()).unwrap_err();
+
+    assert!(error.contains("existe déjà"));
+    assert_eq!(std::fs::read_to_string(dir.join("b.md")).unwrap(), "b");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn duplicates_a_file_without_overwriting() {
+    let dir = std::env::temp_dir().join(format!("markify-duplicate-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = dir.join("note.md");
+    std::fs::write(&source, "one").unwrap();
+
+    let first = duplicate_entry(source.to_string_lossy().into_owned(), "copie".to_string()).unwrap();
+    let second =
+      duplicate_entry(source.to_string_lossy().into_owned(), "copie".to_string()).unwrap();
+
+    assert!(first.ends_with("note-copie.md"));
+    assert!(second.ends_with("note-copie-1.md"));
+    assert_eq!(std::fs::read_to_string(&first).unwrap(), "one");
+    assert_eq!(std::fs::read_to_string(&source).unwrap(), "one");
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn duplicates_a_folder_recursively() {
+    let dir = std::env::temp_dir().join(format!("markify-duplicate-dir-{}", std::process::id()));
+    let source = dir.join("docs");
+    std::fs::create_dir_all(source.join("nested")).unwrap();
+    std::fs::write(source.join("nested").join("note.md"), "hello").unwrap();
+
+    let copy = duplicate_entry(source.to_string_lossy().into_owned(), "copy".to_string()).unwrap();
+
+    assert!(copy.ends_with("docs-copy"));
+    assert_eq!(
+      std::fs::read_to_string(std::path::Path::new(&copy).join("nested").join("note.md")).unwrap(),
+      "hello"
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn moves_an_entry_into_a_folder() {
+    let dir = std::env::temp_dir().join(format!("markify-move-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("target")).unwrap();
+    let source = dir.join("note.md");
+    std::fs::write(&source, "hello").unwrap();
+
+    let moved = move_entry(
+      source.to_string_lossy().into_owned(),
+      dir.join("target").to_string_lossy().into_owned(),
+    )
+    .unwrap();
+
+    assert_eq!(std::path::Path::new(&moved), dir.join("target").join("note.md"));
+    assert!(!source.exists());
+    assert_eq!(
+      std::fs::read_to_string(dir.join("target").join("note.md")).unwrap(),
+      "hello"
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn refuses_to_move_a_folder_inside_itself() {
+    let dir = std::env::temp_dir().join(format!("markify-move-self-{}", std::process::id()));
+    let source = dir.join("docs");
+    std::fs::create_dir_all(source.join("nested")).unwrap();
+
+    let error = move_entry(
+      source.to_string_lossy().into_owned(),
+      source.join("nested").to_string_lossy().into_owned(),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("lui-même"));
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+
+  #[test]
+  fn reports_a_missing_entry_on_delete_without_touching_the_trash() {
+    let dir = std::env::temp_dir().join(format!("markify-delete-missing-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+
+    let error = delete_entry(dir.join("missing.md").to_string_lossy().into_owned()).unwrap_err();
+
+    assert!(error.contains("introuvable"));
+    std::fs::remove_dir_all(dir).unwrap();
+  }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -871,7 +1254,12 @@ pub fn run() {
       save_image,
       save_image_from_path,
       read_system_fonts,
-      list_directory
+      list_directory,
+      create_entry,
+      rename_entry,
+      duplicate_entry,
+      delete_entry,
+      move_entry
     ])
     .setup(|app| {
       #[cfg(any(target_os = "linux", target_os = "windows"))]

@@ -86,6 +86,86 @@
   scrollbar-color: var(--menu-border) transparent;
 }
 
+.sidebar-tree.tree-drop {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.context-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: 280px;
+  max-height: calc(100vh - 16px);
+  padding: 4px 0;
+  overflow-y: auto;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--menu-fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.context-item i {
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.context-item:hover,
+.context-item:focus-visible {
+  background: var(--menu-hover-bg);
+  color: #ffffff;
+}
+
+.context-item:hover i,
+.context-item:focus-visible i {
+  color: #ffffff;
+}
+
+.context-hint {
+  margin-left: auto;
+  max-width: 90px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.context-item:hover .context-hint,
+.context-item:focus-visible .context-hint {
+  color: #ffffff;
+}
+
+.context-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--menu-border);
+}
+
 .sidebar-tree::-webkit-scrollbar {
   width: 8px;
 }

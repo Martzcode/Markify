@@ -5,6 +5,25 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.2] - 2026-11-04
+
+### Ajouté
+
+- **Explorateur complet (F-17)** : menu contextuel sur les fichiers et dossiers avec nouveau fichier, nouveau dossier, renommer, dupliquer, supprimer vers la corbeille du système, révéler dans l'explorateur de fichiers, copier le chemin et rafraîchir.
+- **Création et renommage inline** dans l'arborescence, avec ajout automatique de l'extension `.md` et validation par Entrée / annulation par Échap.
+- **Glisser-déposer** pour déplacer fichiers et dossiers, avec refus des dépôts invalides (dossier dans lui-même, nom déjà présent).
+- Boutons **Nouveau fichier** et **Rafraîchir** dans l'en-tête de l'explorateur.
+- Commandes Rust `create_entry`, `rename_entry`, `duplicate_entry`, `delete_entry` et `move_entry`, avec repli copie/suppression entre volumes.
+
+### Modifié
+
+- Les onglets ouverts suivent automatiquement les fichiers renommés ou déplacés depuis l'explorateur.
+- Nouvelles chaînes traduites en français, anglais, allemand et espagnol.
+
+### Corrigé
+
+- L'environnement de test fournit un `localStorage` et un `Worker` de secours compatibles Node.js 26, ce qui permet à toute la suite Vitest de s'exécuter.
+
 ## [2026.11.1] - 2026-11-03
 
 ### Ajouté

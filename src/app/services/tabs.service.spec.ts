@@ -60,6 +60,21 @@ describe('TabsService', () => {
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 
+  it('rebases every tab path under a renamed folder', async () => {
+    vi.mocked(invoke).mockImplementation(((_command: string, args?: { path?: string }) =>
+      Promise.resolve(`# ${args?.path}`)) as unknown as typeof invoke);
+    await tabs.openPath('/workspace/a.md');
+    await tabs.openPath('/workspace/sub/b.md');
+
+    tabs.rebasePath('/workspace', '/renamed');
+
+    expect(tabs.tabs().map((tab) => tab.filePath)).toEqual([
+      '/renamed/a.md',
+      '/renamed/sub/b.md',
+    ]);
+    expect(document.filePath()).toBe('/renamed/sub/b.md');
+  });
+
   it('reports a file that cannot be opened', async () => {
     vi.mocked(invoke).mockRejectedValue(new Error('ENOENT'));
 
