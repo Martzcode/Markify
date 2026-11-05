@@ -26,6 +26,7 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
 import yaml from 'highlight.js/lib/languages/yaml';
 import { escapeHtml } from './markdown-highlight';
+import { createMathExtension, type MathToken } from './math-extension';
 import { sanitizePdfHtml, sanitizePreviewHtml } from './sanitize';
 
 // Seulement les langages courants : le bundle reste raisonnable et les
@@ -153,6 +154,30 @@ function renderMermaidBlock(code: string): string {
 }
 
 /**
+ * Formule de l'aperçu : la source TeX reste dans le DOM (visible pendant le
+ * chargement de KaTeX et en cas d'erreur) et `EditorView` remplit l'élément
+ * après coup. Le contenu est échappé comme n'importe quel texte.
+ */
+function renderMathPlaceholder(token: MathToken): string {
+  const className = token.displayMode ? 'math-block' : 'math-inline';
+  const tag = token.type === 'mathBlock' ? 'div' : 'span';
+  return `<${tag} class="${className}" role="math">${escapeHtml(token.text)}</${tag}>`;
+}
+
+/**
+ * Dans le PDF, on conserve la source TeX : `html-to-pdfmake` ne sait pas
+ * restituer la mise en page produite par KaTeX (polices mathématiques,
+ * positions calculées).
+ */
+function renderMathSource(token: MathToken): string {
+  const source = escapeHtml(token.raw.trim());
+  return token.type === 'mathBlock' ? `<p>${source}</p>` : source;
+}
+
+const mathExtensions = createMathExtension(renderMathPlaceholder);
+const pdfMathExtensions = createMathExtension(renderMathSource);
+
+/**
  * Colore le code avec highlight.js. Le texte est toujours échappé : les blocs
  * contenant du HTML ne sont donc jamais interprétés.
  */
@@ -234,9 +259,10 @@ function createParser(options: RenderMarkdownOptions): Marked {
   return new Marked({
     gfm: true,
     async: false,
+    extensions: mathExtensions,
     renderer: {
       heading(token) {
-        return `<h${token.depth} id="${nextHeadingId(token.raw)}">${token.text}</h${token.depth}>`;
+        return `<h${token.depth} id="${nextHeadingId(token.raw)}">${this.parser.parseInline(token.tokens)}</h${token.depth}>`;
       },
       html({ text }) {
         return options.allowRawHtml ? text : escapeHtml(text);
@@ -297,6 +323,7 @@ function createPdfParser(allowRawHtml: boolean): Marked {
   return new Marked({
     gfm: true,
     async: false,
+    extensions: pdfMathExtensions,
     renderer: {
       html({ text }) {
         return allowRawHtml ? text : escapeHtml(text);

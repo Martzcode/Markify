@@ -20,6 +20,7 @@ import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { ImageService } from '../../services/image.service';
+import { KatexService } from '../../services/katex.service';
 import { MermaidService } from '../../services/mermaid.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
@@ -31,6 +32,7 @@ import { TocService } from '../../services/toc.service';
 import { isImagePath } from '../../utils/image-path';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
 import { renderMarkdown } from '../../utils/markdown-render';
+import { renderMathElements } from '../../utils/math-blocks';
 import { renderMermaidBlocks } from '../../utils/mermaid-blocks';
 import { highlightRenderedHtml, renderSearchLayer } from '../../utils/search';
 import { SearchBar } from '../search-bar/search-bar';
@@ -48,6 +50,9 @@ function scrollRatio(element: {
 /** Laisse la frappe se stabiliser avant de relancer un rendu Mermaid coûteux. */
 const MERMAID_DEBOUNCE_MS = 250;
 
+/** KaTeX est rapide : un délai court suffit à éviter un rendu par frappe. */
+const MATH_DEBOUNCE_MS = 60;
+
 @Component({
   selector: 'app-editor-view',
   imports: [SearchBar],
@@ -64,6 +69,7 @@ export class EditorView implements OnDestroy {
   private readonly images = inject(ImageService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly i18n = inject(I18nService);
+  private readonly katex = inject(KatexService);
   private readonly mermaid = inject(MermaidService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = inject(TocService);
@@ -81,6 +87,8 @@ export class EditorView implements OnDestroy {
   private destroyed = false;
   private mermaidTimer: ReturnType<typeof setTimeout> | null = null;
   private mermaidRun = 0;
+  private mathTimer: ReturnType<typeof setTimeout> | null = null;
+  private mathRun = 0;
 
   protected readonly renderedHtml = computed(() => {
     const documentPath = this.document.filePath();
@@ -162,6 +170,16 @@ export class EditorView implements OnDestroy {
       }
       this.scheduleMermaidRender();
     });
+    effect(() => {
+      // Les formules suivent uniquement le contenu : KaTeX hérite de la couleur
+      // du texte et n'a donc pas besoin d'être rendu à nouveau avec le thème.
+      this.renderedHtml();
+      if (this.document.mode() === 'edit' || !this.hasMathSyntax()) {
+        this.cancelMathRender();
+        return;
+      }
+      this.scheduleMathRender();
+    });
     this.host.nativeElement.ownerDocument.addEventListener('paste', this.onPaste);
     void this.listenForFileDrop();
   }
@@ -169,6 +187,7 @@ export class EditorView implements OnDestroy {
   ngOnDestroy(): void {
     this.destroyed = true;
     this.cancelMermaidRender();
+    this.cancelMathRender();
     this.host.nativeElement.ownerDocument.removeEventListener('paste', this.onPaste);
     for (const unlisten of this.unlisteners) {
       unlisten();
@@ -343,6 +362,50 @@ export class EditorView implements OnDestroy {
       errorTitle: this.i18n.t('mermaid.error'),
       diagramLabel: this.i18n.t('mermaid.diagram'),
       isCancelled: () => this.destroyed || run !== this.mermaidRun,
+    });
+  }
+
+  private hasMathSyntax(): boolean {
+    const content = this.document.content();
+    return content.includes('$') || content.includes('\\(') || content.includes('\\[');
+  }
+
+  private scheduleMathRender(): void {
+    this.cancelMathRender();
+    if (this.destroyed) {
+      return;
+    }
+    const run = this.mathRun;
+    this.mathTimer = setTimeout(() => {
+      this.mathTimer = null;
+      void this.renderMathFormulas(run);
+    }, MATH_DEBOUNCE_MS);
+  }
+
+  private cancelMathRender(): void {
+    this.mathRun++;
+    if (this.mathTimer !== null) {
+      clearTimeout(this.mathTimer);
+      this.mathTimer = null;
+    }
+  }
+
+  /**
+   * Hydrate les formules de l'aperçu. Le rendu est abandonné si le document
+   * change entre-temps : les nœuds obsolètes ne sont pas réutilisés.
+   */
+  private async renderMathFormulas(run: number): Promise<void> {
+    const preview = this.previewEl()?.nativeElement;
+    if (!preview || this.destroyed || run !== this.mathRun) {
+      return;
+    }
+    if (!preview.querySelector('.math-inline, .math-block')) {
+      return;
+    }
+    await renderMathElements(preview, {
+      render: (source, displayMode) => this.katex.render(source, displayMode),
+      errorTitle: this.i18n.t('math.error'),
+      isCancelled: () => this.destroyed || run !== this.mathRun,
     });
   }
 

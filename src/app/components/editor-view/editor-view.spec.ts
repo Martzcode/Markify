@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
+import { KatexService } from '../../services/katex.service';
 import { MermaidService } from '../../services/mermaid.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
@@ -454,6 +455,32 @@ describe('EditorView', () => {
       'Parse error on line 1',
     );
     expect(preview.querySelector('.mermaid-source')?.textContent).toContain('not a diagram');
+  });
+
+  it('renders inline and block formulas with KaTeX after the debounce', async () => {
+    const fixture = createFixture(
+      'Inline $E=mc^2$ and:\n\n$$\na^2+b^2=c^2\n$$',
+      'read',
+    );
+    const katex = TestBed.inject(KatexService);
+    const render = vi
+      .spyOn(katex, 'render')
+      .mockImplementation(async (_source, displayMode) =>
+        displayMode
+          ? '<span class="katex-display">block</span>'
+          : '<span class="katex">inline</span>',
+      );
+
+    TestBed.flushEffects();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    fixture.detectChanges();
+
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+    expect(render).toHaveBeenCalledWith('E=mc^2', false);
+    expect(render).toHaveBeenCalledWith('a^2+b^2=c^2', true);
+    expect(preview.querySelectorAll('.math-rendered').length).toBe(2);
+    expect(preview.querySelector('.math-inline .katex')).not.toBeNull();
+    expect(preview.querySelector('.math-block .katex-display')).not.toBeNull();
   });
 
   it('escapes raw HTML by default and sanitizes it when allowed', () => {

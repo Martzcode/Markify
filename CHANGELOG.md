@@ -5,6 +5,15 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.5] - 2026-11-05
+
+### Ajouté
+
+- **Formules LaTeX (F-27)** : les formules `$...$`, `$$...$$`, `\(...\)` et `\[...\]` sont rendues par KaTeX dans l'aperçu, y compris dans les titres.
+- **Chargement à la demande** : le moteur KaTeX n'est téléchargé qu'à la première formule ; le CSS et les polices woff2 sont servis localement, sans CDN.
+- **Erreurs lisibles** : une formule invalide conserve sa source TeX et affiche une infobulle traduite.
+- Les formules restent en TeX dans l'export PDF : KaTeX n'y est pas exécuté.
+
 ## [2026.11.4] - 2026-11-05
 
 ### Ajouté

@@ -23,9 +23,15 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "*.woff2",
+                "input": "node_modules/katex/dist/fonts",
+                "output": "katex/fonts"
               }
             ],
             "styles": [
+              "src/katex.css",
               "src/styles.css",
               "node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css",
               "node_modules/@fortawesome/fontawesome-free/css/solid.min.css"

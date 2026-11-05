@@ -238,3 +238,32 @@ body {
   font-size: 12px;
   white-space: pre-wrap;
 }
+
+/* Formules KaTeX : le rendu est injecté après coup, hors du template Angular.
+   La source TeX reste visible pendant le chargement du moteur et en cas
+   d'erreur. KaTeX hérite de la couleur du texte pour suivre le thème. */
+.markdown-body .math-inline {
+  display: inline;
+}
+
+.markdown-body .math-block {
+  display: block;
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+
+.markdown-body .math-block .katex-display {
+  margin: 0;
+}
+
+.markdown-body .math-error {
+  padding: 0 4px;
+  background: var(--error-bg);
+  border-radius: 4px;
+  color: var(--error-fg);
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}

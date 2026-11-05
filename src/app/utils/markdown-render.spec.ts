@@ -144,6 +144,78 @@ describe('renderMarkdown', () => {
   });
 });
 
+describe('renderMarkdown math', () => {
+  it('renders inline math as a placeholder with its TeX source', () => {
+    const html = renderMarkdown('Energy $E=mc^2$ is famous', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const math = parsed.querySelector('.math-inline');
+
+    expect(math).not.toBeNull();
+    expect(math!.textContent).toBe('E=mc^2');
+    expect(math!.getAttribute('role')).toBe('math');
+  });
+
+  it('renders a block formula from a dollar fence', () => {
+    const html = renderMarkdown('$$\nE=mc^2\n$$', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const math = parsed.querySelector('.math-block');
+
+    expect(math).not.toBeNull();
+    expect(math!.tagName).toBe('DIV');
+    expect(math!.textContent).toBe('E=mc^2');
+  });
+
+  it('treats a one-line double-dollar formula as display math', () => {
+    const html = renderMarkdown('Before $$E=mc^2$$ after', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const math = parsed.querySelector('.math-block');
+
+    expect(math).not.toBeNull();
+    expect(math!.tagName).toBe('SPAN');
+    expect(math!.textContent).toBe('E=mc^2');
+  });
+
+  it('supports the LaTeX parenthesis and bracket delimiters', () => {
+    const html = renderMarkdown('Inline \\(a+b\\) then\n\n\\[c+d\\]', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.math-inline')?.textContent).toBe('a+b');
+    expect(parsed.querySelector('.math-block')?.textContent).toBe('c+d');
+  });
+
+  it('renders math inside headings', () => {
+    const html = renderMarkdown('# Formula $x^2$', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('h1 .math-inline')?.textContent).toBe('x^2');
+  });
+
+  it('does not interpret math inside code spans or fences', () => {
+    const html = renderMarkdown('Use `$x$` here.\n\n```ts\nconst price = $y$;\n```', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.math-inline')).toBeNull();
+    expect(parsed.querySelector('.math-block')).toBeNull();
+    expect(parsed.querySelector('pre code')?.textContent).toContain('$y$');
+  });
+
+  it('leaves escaped dollars as literal text', () => {
+    const html = renderMarkdown('Escaped \\$x\\$ here', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.math-inline')).toBeNull();
+    expect(parsed.body.textContent).toContain('$x$');
+  });
+
+  it('does not mistake prices for formulas', () => {
+    const html = renderMarkdown('It costs $5 and $10.', 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.math-inline')).toBeNull();
+    expect(parsed.body.textContent).toContain('$5 and $10');
+  });
+});
+
 describe('renderMarkdownPlain', () => {
   it('colors code blocks with inline styles for the PDF pipeline', () => {
     const html = renderMarkdownPlain('```ts\nconst x = 1;\n```');
@@ -189,6 +261,16 @@ describe('renderMarkdownPlain', () => {
     expect(parsed.querySelector('.mermaid-block')).toBeNull();
     expect(parsed.querySelector('pre code')?.textContent).toBe('graph TD\n  A --> B');
     expect(parsed.querySelector('pre code')?.className).toBe('language-mermaid');
+  });
+
+  it('keeps the TeX source instead of KaTeX markup in the PDF', () => {
+    const html = renderMarkdownPlain('Inline $E=mc^2$ and\n\n$$\na^2+b^2=c^2\n$$');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.math-inline')).toBeNull();
+    expect(parsed.querySelector('.math-block')).toBeNull();
+    expect(parsed.body.textContent).toContain('$E=mc^2$');
+    expect(parsed.body.textContent).toContain('a^2+b^2=c^2');
   });
 });
 
