@@ -17,7 +17,8 @@ jobs:
   retry:
     name: Retry run without a runner
     if: >-
-      github.event.workflow_run.conclusion == 'failure' &&
+      (github.event.workflow_run.conclusion == 'failure' ||
+       github.event.workflow_run.conclusion == 'cancelled') &&
       github.event.workflow_run.run_attempt < 3
     runs-on: ubuntu-latest
     steps:
@@ -52,5 +53,5 @@ jobs:
               `Hosted runner never assigned for: ${names}. ` +
                 `Rerunning (attempt ${run.run_attempt} of 3).`,
             );
-            await github.rest.actions.rerunWorkflow({ owner, repo, run_id: run.id });
+            await github.rest.actions.reRunWorkflow({ owner, repo, run_id: run.id });
             core.info('Rerun requested.');
