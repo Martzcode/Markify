@@ -4,11 +4,13 @@ import { vi } from 'vitest';
 import { EditorView } from './editor-view';
 import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
+import { MermaidService } from '../../services/mermaid.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService } from '../../services/session.service';
 import { SpellcheckService } from '../../services/spellcheck.service';
 import { TabsService } from '../../services/tabs.service';
+import { ThemeService } from '../../services/theme.service';
 import { TocService } from '../../services/toc.service';
 
 describe('EditorView', () => {
@@ -408,6 +410,50 @@ describe('EditorView', () => {
     );
     expect(numbers).toEqual(['1', '2']);
     expect(preview.querySelector('pre code')?.textContent).toBe('const a = 1;\nconst b = 2;');
+  });
+
+  it('renders mermaid diagrams after the debounce and re-renders on theme change', async () => {
+    const fixture = createFixture('```mermaid\ngraph TD\n  A --> B\n```', 'read');
+    const mermaid = TestBed.inject(MermaidService);
+    const render = vi
+      .spyOn(mermaid, 'render')
+      .mockResolvedValue('<svg id="diagram"><text>ok</text></svg>');
+
+    TestBed.flushEffects();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+    expect(render).toHaveBeenCalledWith('graph TD\n  A --> B', 'default');
+    expect(preview.querySelector('.mermaid-diagram svg')).not.toBeNull();
+    expect(preview.querySelector('.mermaid-block')!.classList.contains('mermaid-rendered')).toBe(
+      true,
+    );
+
+    TestBed.inject(ThemeService).setPreference('dark');
+    TestBed.flushEffects();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+
+    expect(render).toHaveBeenCalledTimes(2);
+    expect(render).toHaveBeenLastCalledWith('graph TD\n  A --> B', 'dark');
+  });
+
+  it('shows a readable error when a mermaid diagram cannot be rendered', async () => {
+    const fixture = createFixture('```mermaid\nnot a diagram\n```', 'read');
+    const mermaid = TestBed.inject(MermaidService);
+    vi.spyOn(mermaid, 'render').mockRejectedValue(new Error('Parse error on line 1'));
+
+    TestBed.flushEffects();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+
+    const preview = fixture.nativeElement.querySelector('.editor-preview') as HTMLElement;
+    expect(preview.querySelector('.mermaid-error-title')?.textContent).toContain('Mermaid');
+    expect(preview.querySelector('.mermaid-error-detail')?.textContent).toBe(
+      'Parse error on line 1',
+    );
+    expect(preview.querySelector('.mermaid-source')?.textContent).toContain('not a diagram');
   });
 
   it('escapes raw HTML by default and sanitizes it when allowed', () => {

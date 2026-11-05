@@ -136,6 +136,23 @@ function stripTrailingNewline(text: string): string {
 }
 
 /**
+ * Bloc Mermaid de l'aperçu : la source reste dans le DOM (visible tant que le
+ * diagramme n'est pas rendu, et en cas d'erreur) et `EditorView` remplit
+ * `.mermaid-diagram` après coup. La source est échappée comme n'importe quel
+ * code : elle ne peut donc pas injecter de HTML.
+ */
+function renderMermaidBlock(code: string): string {
+  return (
+    '<div class="mermaid-block">' +
+    '<pre class="mermaid-source"><code class="language-mermaid">' +
+    escapeHtml(code) +
+    '</code></pre>' +
+    '<div class="mermaid-diagram" role="img"></div>' +
+    '</div>'
+  );
+}
+
+/**
  * Colore le code avec highlight.js. Le texte est toujours échappé : les blocs
  * contenant du HTML ne sont donc jamais interprétés.
  */
@@ -235,6 +252,9 @@ function createParser(options: RenderMarkdownOptions): Marked {
       code({ text, lang }) {
         const language = normalizeLanguage(lang);
         const code = stripTrailingNewline(text);
+        if (language === 'mermaid') {
+          return renderMermaidBlock(code);
+        }
         const highlighted = highlightCode(code, language);
         const classAttr = language ? ` class="hljs language-${language}"` : ' class="hljs"';
         const codeHtml = `<pre><code${classAttr}>${highlighted}</code></pre>`;
@@ -282,6 +302,8 @@ function createPdfParser(allowRawHtml: boolean): Marked {
         return allowRawHtml ? text : escapeHtml(text);
       },
       code({ text, lang }) {
+        // Les blocs Mermaid restent du code dans le PDF : mermaid n'est jamais
+        // exécuté pendant l'export (le diagramme n'a pas été rendu au préalable).
         const language = normalizeLanguage(lang);
         const code = stripTrailingNewline(text);
         const highlighted = highlightCodeForPdf(code, language);

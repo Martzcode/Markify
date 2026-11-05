@@ -5,6 +5,16 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.4] - 2026-11-05
+
+### Ajouté
+
+- **Diagrammes Mermaid (F-28)** : les blocs de code ` ```mermaid ` sont rendus sous forme de diagrammes dans l'aperçu (flowcharts, séquences, gantt, etc.), avec repli sur la source pendant le chargement.
+- **Chargement à la demande** : le moteur Mermaid et ses dépendances ne sont téléchargés qu'au premier diagramme rencontré, sans alourdir le bundle initial.
+- **Thème clair/sombre** : les diagrammes suivent automatiquement le thème de l'application et sont rendus à nouveau lors d'un changement.
+- **Erreurs lisibles** : un diagramme invalide affiche un message traduit avec le détail de l'erreur, tout en conservant sa source.
+- Les blocs Mermaid restent du code source dans l'export PDF : aucun diagramme n'est exécuté pendant la génération.
+
 ## [2026.11.3] - 2026-11-05
 
 ### Ajouté

@@ -117,6 +117,31 @@ describe('renderMarkdown', () => {
     expect(numbers).toEqual(['1', '2']);
     expect(codeText(html)).toBe('const a = 1;\nconst b = 2;');
   });
+
+  it('renders mermaid fences as a diagram placeholder without a code header', () => {
+    const content = '```mermaid\ngraph TD\n  A[Start] --> B[End]\n```';
+    const html = renderMarkdown(content, 'Copy');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const block = parsed.querySelector('.mermaid-block');
+
+    expect(block).not.toBeNull();
+    expect(block!.querySelector('.code-block')).toBeNull();
+    expect(block!.querySelector('.code-copy')).toBeNull();
+    expect(block!.querySelector('.mermaid-source')?.textContent).toBe(
+      'graph TD\n  A[Start] --> B[End]',
+    );
+    expect(block!.querySelector('.mermaid-diagram')?.getAttribute('role')).toBe('img');
+  });
+
+  it('escapes mermaid source instead of injecting it', () => {
+    const html = renderMarkdown(
+      '```mermaid\ngraph TD\n  A[<img src=x onerror=alert(1)>] --> B\n```',
+      'Copy',
+    );
+
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img');
+  });
 });
 
 describe('renderMarkdownPlain', () => {
@@ -155,6 +180,15 @@ describe('renderMarkdownPlain', () => {
 
   it('returns an empty string for empty content', () => {
     expect(renderMarkdownPlain('')).toBe('');
+  });
+
+  it('keeps mermaid fences as plain code instead of executing them', () => {
+    const html = renderMarkdownPlain('```mermaid\ngraph TD\n  A --> B\n```');
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+    expect(parsed.querySelector('.mermaid-block')).toBeNull();
+    expect(parsed.querySelector('pre code')?.textContent).toBe('graph TD\n  A --> B');
+    expect(parsed.querySelector('pre code')?.className).toBe('language-mermaid');
   });
 });
 

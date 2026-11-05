@@ -357,6 +357,9 @@
   user-select: none;
 }
 
+/* Bloc Mermaid : styles globaux (voir `src/styles.css`) car le SVG est injecté
+   hors du template Angular. */
+
 :host ::ng-deep .markdown-body blockquote {
   margin: 0.8em 0;
   padding: 0.2em 1em;

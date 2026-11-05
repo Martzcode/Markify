@@ -168,3 +168,73 @@ body {
 .markdown-body .hljs-deletion {
   color: var(--code-deletion);
 }
+
+/* Bloc Mermaid : la source sert de repli pendant le chargement et en cas
+   d'erreur ; une fois le diagramme rendu, elle est masquée. Ces styles sont
+   globaux car le SVG est injecté hors du template Angular. */
+.markdown-body .mermaid-block {
+  margin: 1em 0;
+  overflow: hidden;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.markdown-body .mermaid-block .mermaid-source {
+  margin: 0;
+  padding: 12px 16px;
+  overflow: auto;
+  background: none;
+  border-radius: 0;
+}
+
+.markdown-body .mermaid-block .mermaid-source code {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 13px;
+}
+
+.markdown-body .mermaid-rendered .mermaid-source {
+  display: none;
+}
+
+.markdown-body .mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+}
+
+.markdown-body .mermaid-diagram:empty {
+  display: none;
+}
+
+.markdown-body .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body .mermaid-error {
+  padding: 10px 14px;
+  background: var(--error-bg);
+  border-bottom: 1px solid var(--error-border);
+  color: var(--error-fg);
+  font-size: 13px;
+}
+
+.markdown-body .mermaid-error-title {
+  font-weight: 600;
+}
+
+.markdown-body .mermaid-error .mermaid-error-detail {
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 140px;
+  overflow: auto;
+  background: none;
+  border-radius: 0;
+  color: inherit;
+  font-size: 12px;
+  white-space: pre-wrap;
+}

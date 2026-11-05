@@ -20,15 +20,18 @@ import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { ImageService } from '../../services/image.service';
+import { MermaidService } from '../../services/mermaid.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SessionService, type ScrollRatios } from '../../services/session.service';
 import { SpellcheckService } from '../../services/spellcheck.service';
 import { TabsService } from '../../services/tabs.service';
+import { ThemeService } from '../../services/theme.service';
 import { TocService } from '../../services/toc.service';
 import { isImagePath } from '../../utils/image-path';
 import { highlightMarkdown } from '../../utils/markdown-highlight';
 import { renderMarkdown } from '../../utils/markdown-render';
+import { renderMermaidBlocks } from '../../utils/mermaid-blocks';
 import { highlightRenderedHtml, renderSearchLayer } from '../../utils/search';
 import { SearchBar } from '../search-bar/search-bar';
 
@@ -41,6 +44,9 @@ function scrollRatio(element: {
   const max = element.scrollHeight - element.clientHeight;
   return max > 0 ? Math.min(1, Math.max(0, element.scrollTop / max)) : 0;
 }
+
+/** Laisse la frappe se stabiliser avant de relancer un rendu Mermaid coûteux. */
+const MERMAID_DEBOUNCE_MS = 250;
 
 @Component({
   selector: 'app-editor-view',
@@ -58,10 +64,12 @@ export class EditorView implements OnDestroy {
   private readonly images = inject(ImageService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly i18n = inject(I18nService);
+  private readonly mermaid = inject(MermaidService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = inject(TocService);
   private readonly session = inject(SessionService);
   private readonly tabs = inject(TabsService);
+  private readonly theme = inject(ThemeService);
   private readonly injector = inject(Injector);
   private readonly inputEl = viewChild<ElementRef<HTMLTextAreaElement>>('input');
   private readonly highlightEl = viewChild<ElementRef<HTMLElement>>('highlight');
@@ -71,6 +79,8 @@ export class EditorView implements OnDestroy {
   private readonly onPaste = (event: ClipboardEvent) => this.handlePaste(event);
   private lastDropAt = 0;
   private destroyed = false;
+  private mermaidTimer: ReturnType<typeof setTimeout> | null = null;
+  private mermaidRun = 0;
 
   protected readonly renderedHtml = computed(() => {
     const documentPath = this.document.filePath();
@@ -141,12 +151,24 @@ export class EditorView implements OnDestroy {
       }
       untracked(() => this.revealCurrentMatch());
     });
+    effect(() => {
+      // Le contenu et le thème conditionnent les diagrammes : on replanifie un
+      // rendu à chaque changement, après un court délai pour la frappe.
+      this.renderedHtml();
+      this.theme.isDark();
+      if (this.document.mode() === 'edit') {
+        this.cancelMermaidRender();
+        return;
+      }
+      this.scheduleMermaidRender();
+    });
     this.host.nativeElement.ownerDocument.addEventListener('paste', this.onPaste);
     void this.listenForFileDrop();
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.cancelMermaidRender();
     this.host.nativeElement.ownerDocument.removeEventListener('paste', this.onPaste);
     for (const unlisten of this.unlisteners) {
       unlisten();
@@ -281,6 +303,47 @@ export class EditorView implements OnDestroy {
       const max = Math.max(0, preview.scrollHeight - preview.clientHeight);
       preview.scrollTop = Math.round(ratios.preview * max);
     }
+  }
+
+  private scheduleMermaidRender(): void {
+    this.cancelMermaidRender();
+    if (this.destroyed) {
+      return;
+    }
+    const run = this.mermaidRun;
+    this.mermaidTimer = setTimeout(() => {
+      this.mermaidTimer = null;
+      void this.renderMermaidDiagrams(run);
+    }, MERMAID_DEBOUNCE_MS);
+  }
+
+  private cancelMermaidRender(): void {
+    this.mermaidRun++;
+    if (this.mermaidTimer !== null) {
+      clearTimeout(this.mermaidTimer);
+      this.mermaidTimer = null;
+    }
+  }
+
+  /**
+   * Hydrate les blocs Mermaid de l'aperçu. Le rendu est abandonné si le
+   * document change entre-temps : les nœuds obsolètes ne sont pas réutilisés.
+   */
+  private async renderMermaidDiagrams(run: number): Promise<void> {
+    const preview = this.previewEl()?.nativeElement;
+    if (!preview || this.destroyed || run !== this.mermaidRun) {
+      return;
+    }
+    if (!preview.querySelector('.mermaid-block')) {
+      return;
+    }
+    await renderMermaidBlocks(preview, {
+      theme: this.theme.isDark() ? 'dark' : 'default',
+      render: (source, theme) => this.mermaid.render(source, theme),
+      errorTitle: this.i18n.t('mermaid.error'),
+      diagramLabel: this.i18n.t('mermaid.diagram'),
+      isCancelled: () => this.destroyed || run !== this.mermaidRun,
+    });
   }
 
   private tocTarget(id: string): HTMLElement | null {
