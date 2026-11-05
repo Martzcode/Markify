@@ -356,4 +356,29 @@ describe('TabsService', () => {
     expect(document.isOpen()).toBe(false);
     expect(toast.message()).toContain('notes.md');
   });
+
+  it('applies external content to the active tab without marking it dirty', async () => {
+    vi.mocked(invoke).mockResolvedValue('# Original');
+    await tabs.openPath('/tmp/notes.md');
+    document.setContent('# Local edit');
+    TestBed.flushEffects();
+
+    expect(tabs.applyExternalContent('/tmp/notes.md', '# From disk')).toBe(true);
+
+    expect(document.content()).toBe('# From disk');
+    expect(document.isDirty()).toBe(false);
+    expect(tabs.activeTab()?.content).toBe('# From disk');
+  });
+
+  it('updates an inactive tab without touching the active document', async () => {
+    vi.mocked(invoke).mockResolvedValue('# A');
+    await tabs.openPath('/tmp/a.md');
+    await tabs.openPath('/tmp/b.md');
+
+    expect(tabs.applyExternalContent('/tmp/a.md', '# A changed')).toBe(true);
+
+    expect(tabs.tabs()[0].content).toBe('# A changed');
+    expect(tabs.tabs()[0].isDirty).toBe(false);
+    expect(document.content()).toBe('# A');
+  });
 });

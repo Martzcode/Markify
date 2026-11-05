@@ -521,4 +521,43 @@ describe('ExplorerService', () => {
 
     expect(service.canDropOn('/workspace/docs/nested')).toBe(false);
   });
+
+  it('refreshes only the root after an external change at the root', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    vi.mocked(invoke).mockResolvedValue([]);
+
+    await service.applyExternalChanges(['/workspace/new.md', '/elsewhere/x.md']);
+
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/workspace' });
+  });
+
+  it('refreshes a loaded folder that is no longer expanded', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    vi.mocked(invoke).mockResolvedValue([]);
+
+    await service.toggleDir('/workspace/docs');
+    await service.toggleDir('/workspace/docs');
+    vi.mocked(invoke).mockClear();
+
+    await service.applyExternalChanges(['/workspace/docs/new.md']);
+
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith('list_directory', { path: '/workspace/docs' });
+  });
+
+  it('does not load a folder that was never displayed', async () => {
+    service.rootPath.set('/workspace');
+    service.rootEntries.set([]);
+    service.expanded.set(new Set(['/workspace']));
+    vi.mocked(invoke).mockResolvedValue([]);
+
+    await service.applyExternalChanges(['/workspace/unloaded/new.md']);
+
+    expect(invoke).not.toHaveBeenCalled();
+  });
 });

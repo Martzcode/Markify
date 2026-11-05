@@ -14,6 +14,7 @@ import { AboutDialogService } from './services/about-dialog.service';
 import { ConfirmService } from './services/confirm.service';
 import { DocumentService } from './services/document.service';
 import { ExplorerService } from './services/explorer.service';
+import { FileWatchService } from './services/file-watch.service';
 import { KeyboardShortcutsService } from './services/keyboard-shortcuts.service';
 import { SessionService } from './services/session.service';
 import { TabsService } from './services/tabs.service';
@@ -43,6 +44,7 @@ export class App {
   private readonly shortcuts = inject(KeyboardShortcutsService);
   private readonly closeGuard = inject(WindowCloseGuardService);
   private readonly session = inject(SessionService);
+  private readonly fileWatch = inject(FileWatchService);
   protected readonly i18n = inject(I18nService);
   protected readonly document = inject(DocumentService);
   protected readonly tabs = inject(TabsService);
@@ -56,6 +58,7 @@ export class App {
   constructor() {
     void this.shortcuts;
     void this.closeGuard.start();
+    void this.fileWatch.start();
     void this.session.restore();
     effect(() => {
       const path = this.document.filePath();

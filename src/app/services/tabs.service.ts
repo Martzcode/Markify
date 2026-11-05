@@ -33,6 +33,18 @@ function basename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+/** Compare deux chemins de fichier, sans tenir compte de la casse sous Windows. */
+function samePath(a: string, b: string): boolean {
+  const left = norm(a);
+  const right = norm(b);
+  if (left === right) {
+    return true;
+  }
+  return /^[A-Za-z]:/.test(left) || /^[A-Za-z]:/.test(right)
+    ? left.toLowerCase() === right.toLowerCase()
+    : false;
+}
+
 function clampRatio(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
@@ -310,6 +322,39 @@ export class TabsService {
     if (current !== null) {
       this.document.filePath.set(rebase(current));
     }
+  }
+
+  /**
+   * Applique un contenu relu depuis le disque à l'onglet correspondant (F-18).
+   * Le document actif est mis à jour sans passer par l'historique.
+   */
+  applyExternalContent(path: string, content: string): boolean {
+    const target = this.tabs().find(
+      (tab) => tab.filePath !== null && samePath(tab.filePath, path),
+    );
+    if (!target) {
+      return false;
+    }
+    const isActive = this.activeId() === target.id;
+    this.tabs.update((tabs) =>
+      tabs.map((tab) =>
+        tab.id === target.id
+          ? {
+              ...tab,
+              content,
+              isDirty: false,
+              error: null,
+              undoStack: [],
+              redoStack: [],
+              lastEditAt: null,
+            }
+          : tab,
+      ),
+    );
+    if (isActive) {
+      this.document.applyExternalContent(content);
+    }
+    return true;
   }
 
   /** Mémorise la position de défilement de l'onglet actif. */

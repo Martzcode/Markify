@@ -591,6 +591,40 @@ export class ExplorerService {
     }
   }
 
+  /**
+   * Applique des changements externes à l'arborescence (F-18). Seuls les
+   * dossiers déjà chargés sont relus : aucun dossier n'est découvert ni chargé
+   * à cause d'une simple notification du système de fichiers.
+   */
+  async applyExternalChanges(paths: readonly string[]): Promise<void> {
+    const root = this.rootPath();
+    if (!root) {
+      return;
+    }
+    const directories = new Set<string>();
+    for (const path of paths) {
+      const normalized = norm(path);
+      if (!isInside(root, normalized)) {
+        continue;
+      }
+      const parent = parentDirectory(normalized);
+      if (parent !== null && this.isLoadedDirectory(parent)) {
+        directories.add(parent);
+      }
+      if (this.isLoadedDirectory(normalized)) {
+        directories.add(normalized);
+      }
+    }
+    for (const dir of directories) {
+      await this.refreshDirectory(dir).catch(() => {});
+    }
+  }
+
+  private isLoadedDirectory(dir: string): boolean {
+    const normalized = norm(dir);
+    return normalized === this.rootPath() || this.childrenCache.has(normalized);
+  }
+
   /** Relit un seul dossier sans réinitialiser le reste de l'arborescence. */
   private async refreshDirectory(dir: string): Promise<void> {
     const entries = await invoke<ExplorerEntry[]>('list_directory', { path: dir });

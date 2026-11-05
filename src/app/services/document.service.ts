@@ -139,6 +139,18 @@ export class DocumentService {
   }
 
   /**
+   * Remplace le contenu par la version présente sur le disque (F-18), sans
+   * marquer de modification et sans conserver l'historique de l'ancienne
+   * version.
+   */
+  applyExternalContent(content: string): void {
+    this.content.set(content);
+    this.isDirty.set(false);
+    this.error.set(null);
+    this.resetHistory();
+  }
+
+  /**
    * Ferme le document courant et revient à l'écran d'accueil sans fermer la
    * fenêtre. Passe par le garde-fou des modifications (F-01).
    */

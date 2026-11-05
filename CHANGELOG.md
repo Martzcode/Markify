@@ -5,6 +5,21 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.3] - 2026-11-05
+
+### Ajouté
+
+- **Surveillance des fichiers (F-18)** : Markify détecte les modifications effectuées hors de l'application. Les onglets sans modification sont rechargés automatiquement ; en cas de conflit avec des modifications locales, un dialogue permet de recharger le fichier ou de conserver sa version.
+- L'explorateur rafraîchit uniquement les dossiers déjà chargés et concernés par un changement externe.
+
+### Modifié
+
+- La surveillance se limite aux dossiers utiles (racine ouverte, dossiers dépliés et parents des onglets), sans scrutation : les notifications sont regroupées côté Rust puis côté interface avant tout rechargement.
+
+### Corrigé
+
+- Le workflow « Retry transient failures » relance désormais les exécutions interrompues : la méthode Octokit correcte (`reRunWorkflow`) est utilisée et les exécutions annulées (`cancelled`) sont prises en compte, en plus des échecs.
+
 ## [2026.11.2] - 2026-11-04
 
 ### Ajouté

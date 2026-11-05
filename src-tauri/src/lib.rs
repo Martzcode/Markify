@@ -1,3 +1,17 @@
+use std::collections::BTreeSet;
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
+use std::time::{Duration, Instant};
+use notify::Watcher;
+use tauri::{AppHandle, Emitter, State};
+
+/// Délai de regroupement des événements du système de fichiers. Les éditeurs
+/// produisent souvent plusieurs notifications pour une seule sauvegarde.
+const FS_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// Durée maximale d'un lot : évite de différer indéfiniment les événements
+/// lorsqu'un dossier est modifié en continu.
+const FS_MAX_BATCH: Duration = Duration::from_secs(1);
+
 #[tauri::command]
 fn read_markdown_file(path: String) -> Result<String, String> {
   std::fs::read_to_string(&path).map_err(|err| err.to_string())
@@ -614,6 +628,202 @@ fn find_font_in_dir(dir: &std::path::Path, wanted: &str, depth: u32) -> Option<s
   None
 }
 
+/// Charge utile de l'événement `fs-changed` envoyé au frontend.
+#[derive(Clone, serde::Serialize)]
+struct FsChangedPayload {
+  paths: Vec<String>,
+}
+
+/// État partagé du surveillant de fichiers. Un seul watcher est actif : il est
+/// recréé lorsque la liste des dossiers utiles change.
+#[derive(Default)]
+struct WatchState {
+  inner: std::sync::Mutex<Option<WatchHandle>>,
+  requested: std::sync::Mutex<Vec<String>>,
+}
+
+struct WatchHandle {
+  _watcher: notify::RecommendedWatcher,
+}
+
+/// Dossiers et fichiers temporaires ignorés : ils génèrent du bruit sans
+/// intérêt pour l'éditeur et ne doivent jamais déclencher de rechargement.
+fn is_ignored_path(path: &std::path::Path) -> bool {
+  const IGNORED_DIRS: [&str; 8] = [
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    ".angular",
+    ".idea",
+    ".vscode",
+    "__pycache__",
+  ];
+
+  for component in path.components() {
+    if let std::path::Component::Normal(name) = component {
+      let name = name.to_string_lossy();
+      if IGNORED_DIRS
+        .iter()
+        .any(|ignored| name.eq_ignore_ascii_case(ignored))
+      {
+        return true;
+      }
+      if name.ends_with(".swp") || name.ends_with(".swx") || name.ends_with('~') {
+        return true;
+      }
+    }
+  }
+
+  let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+    return false;
+  };
+  name == ".DS_Store" || name.ends_with(".tmp") || name.ends_with(".temp")
+}
+
+/// Normalise, déduplique et trie les dossiers à surveiller. Les séparateurs
+/// sont uniformisés pour que deux écritures du même chemin ne recréent pas le
+/// watcher inutilement.
+fn normalized_watch_paths(paths: &[String]) -> Vec<String> {
+  let mut wanted = BTreeSet::new();
+  for path in paths {
+    if path.trim().is_empty() {
+      continue;
+    }
+    let mut trimmed = path.trim_end_matches(['/', '\\']);
+    if trimmed.is_empty() {
+      // Racine du système de fichiers (`/`) : on la conserve telle quelle.
+      if path.starts_with('/') {
+        trimmed = "/";
+      } else {
+        continue;
+      }
+    }
+    let normalized = trimmed.replace('\\', "/");
+    // Une racine de lecteur (`C:`) doit conserver son séparateur.
+    let normalized = if normalized.len() == 2 && normalized.ends_with(':') {
+      format!("{normalized}/")
+    } else {
+      normalized
+    };
+    wanted.insert(normalized);
+  }
+  wanted.into_iter().collect()
+}
+
+/// Regroupe les notifications reçues pendant `FS_DEBOUNCE` avant d'émettre un
+/// seul événement vers le frontend. Le thread s'arrête quand le canal est
+/// déconnecté, c'est-à-dire quand l'ancien watcher est remplacé.
+fn debounce_events(app: AppHandle, receiver: Receiver<String>) {
+  let mut pending = BTreeSet::new();
+  loop {
+    let first = match receiver.recv() {
+      Ok(path) => path,
+      Err(_) => return,
+    };
+    pending.insert(first);
+
+    let deadline = Instant::now() + FS_MAX_BATCH;
+    loop {
+      let remaining = deadline.saturating_duration_since(Instant::now());
+      if remaining.is_zero() {
+        break;
+      }
+      match receiver.recv_timeout(remaining.min(FS_DEBOUNCE)) {
+        Ok(path) => {
+          pending.insert(path);
+        }
+        Err(RecvTimeoutError::Timeout) => break,
+        Err(RecvTimeoutError::Disconnected) => {
+          emit_changes(&app, &mut pending);
+          return;
+        }
+      }
+    }
+    emit_changes(&app, &mut pending);
+  }
+}
+
+fn emit_changes(app: &AppHandle, pending: &mut BTreeSet<String>) {
+  if pending.is_empty() {
+    return;
+  }
+  let paths: Vec<String> = std::mem::take(pending).into_iter().collect();
+  let _ = app.emit("fs-changed", FsChangedPayload { paths });
+}
+
+/// Met en place la surveillance non récursive des dossiers demandés. Le
+/// frontend n'envoie que la racine ouverte, les dossiers dépliés et les
+/// parents des onglets, ce qui garde le nombre de handles très faible.
+#[tauri::command]
+fn set_watched_paths(
+  app: AppHandle,
+  state: State<'_, WatchState>,
+  paths: Vec<String>,
+) -> Result<(), String> {
+  let wanted = normalized_watch_paths(&paths);
+  {
+    let requested = state
+      .requested
+      .lock()
+      .map_err(|_| "état de surveillance indisponible")?;
+    if *requested == wanted {
+      return Ok(());
+    }
+  }
+
+  let mut inner = state
+    .inner
+    .lock()
+    .map_err(|_| "état de surveillance indisponible")?;
+  // Remplace l'ancien watcher : le thread de regroupement s'arrête quand son
+  // canal est déconnecté.
+  *inner = None;
+
+  if wanted.is_empty() {
+    *state
+      .requested
+      .lock()
+      .map_err(|_| "état de surveillance indisponible")? = wanted;
+    return Ok(());
+  }
+
+  let (sender, receiver) = std::sync::mpsc::channel::<String>();
+  let debounce_app = app.clone();
+  std::thread::Builder::new()
+    .name("markify-fs-debounce".into())
+    .spawn(move || debounce_events(debounce_app, receiver))
+    .map_err(|err| err.to_string())?;
+
+  let mut watcher = notify::recommended_watcher(
+    move |result: notify::Result<notify::Event>| {
+      if let Ok(event) = result {
+        for path in event.paths {
+          if !is_ignored_path(&path) {
+            let _ = sender.send(path.to_string_lossy().into_owned());
+          }
+        }
+      }
+    },
+  )
+  .map_err(|err| err.to_string())?;
+
+  for path in &wanted {
+    // Un dossier supprimé entre-temps ne doit pas faire échouer la mise à jour.
+    let _ = watcher.watch(
+      std::path::Path::new(path),
+      notify::RecursiveMode::NonRecursive,
+    );
+  }
+
+  *inner = Some(WatchHandle { _watcher: watcher });
+  *state
+    .requested
+    .lock()
+    .map_err(|_| "état de surveillance indisponible")? = wanted;
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -1220,6 +1430,63 @@ mod tests {
   }
 }
 
+#[cfg(test)]
+mod watch_tests {
+  use super::*;
+
+  #[test]
+  fn ignores_noisy_directories() {
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/node_modules/pkg/index.js"
+    )));
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/.git/index.lock"
+    )));
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/target/debug/markify"
+    )));
+    assert!(!is_ignored_path(std::path::Path::new(
+      "/repo/docs/notes.md"
+    )));
+  }
+
+  #[test]
+  fn ignores_editor_temporary_files() {
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/docs/.notes.md.swp"
+    )));
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/docs/notes.md~"
+    )));
+    assert!(is_ignored_path(std::path::Path::new(
+      "/repo/docs/.DS_Store"
+    )));
+  }
+
+  #[test]
+  fn normalizes_and_deduplicates_watch_paths() {
+    let paths = normalized_watch_paths(&[
+      "/repo/docs/".to_string(),
+      "/repo\\docs".to_string(),
+      "/repo/docs/more".to_string(),
+      "   ".to_string(),
+    ]);
+
+    assert_eq!(
+      paths,
+      vec!["/repo/docs".to_string(), "/repo/docs/more".to_string()]
+    );
+  }
+
+  #[test]
+  fn keeps_the_separator_of_a_drive_root() {
+    assert_eq!(
+      normalized_watch_paths(&["C:\\".to_string()]),
+      vec!["C:/".to_string()]
+    );
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let context = tauri::generate_context!();
@@ -1233,6 +1500,7 @@ pub fn run() {
   }
 
   tauri::Builder::default()
+    .manage(WatchState::default())
     .plugin(
       tauri_plugin_window_state::Builder::default()
         .with_state_flags(
@@ -1259,7 +1527,8 @@ pub fn run() {
       rename_entry,
       duplicate_entry,
       delete_entry,
-      move_entry
+      move_entry,
+      set_watched_paths
     ])
     .setup(|app| {
       #[cfg(any(target_os = "linux", target_os = "windows"))]
