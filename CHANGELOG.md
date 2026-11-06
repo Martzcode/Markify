@@ -5,6 +5,19 @@ Toutes les modifications notables de Markify sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2026.11.6] - 2026-11-06
+
+### Ajouté
+
+- **Propriétés YAML (F-29)** : Markify reconnaît un en-tête `--- … ---` en début de document et propose un panneau de propriétés pour éditer titre, date, étiquettes, auteur et statut, ainsi que des champs personnalisés. Chaque modification ne réécrit que l'en-tête ; le corps du document reste intact.
+- **Validation** : un en-tête YAML invalide ou qui n'est pas un mapping n'est pas traité comme un front matter ; le panneau affiche l'erreur et le Markdown reste visible. Les valeurs complexes sont affichées en lecture seule.
+- **Copie enrichie (F-30)** : le menu Édition → Copier sous permet de copier la sélection ou tout le document en HTML enrichi, en Markdown ou en texte brut. Le HTML réutilise le rendu assaini de l'aperçu et embarque aussi une version texte.
+- Nouvelles chaînes traduites en français, anglais, allemand et espagnol.
+
+### Modifié
+
+- L'aperçu et l'export PDF ignorent un en-tête YAML valide, tandis que la table des matières conserve les positions du document complet.
+
 ## [2026.11.5] - 2026-11-05
 
 ### Ajouté

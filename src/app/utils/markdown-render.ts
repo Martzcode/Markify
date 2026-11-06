@@ -25,6 +25,7 @@ import swift from 'highlight.js/lib/languages/swift';
 import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
 import yaml from 'highlight.js/lib/languages/yaml';
+import { parseFrontMatter, stripFrontMatter } from './front-matter';
 import { escapeHtml } from './markdown-highlight';
 import { createMathExtension, type MathToken } from './math-extension';
 import { sanitizePdfHtml, sanitizePreviewHtml } from './sanitize';
@@ -396,7 +397,7 @@ export function renderMarkdown(
   }
   const escapedLabel = escapeHtml(copyLabel);
   slugCounts.clear();
-  let html = parserFor(options).parse(content) as string;
+  let html = parserFor(options).parse(stripFrontMatter(content)) as string;
   html = html.replaceAll(CODE_BLOCK_RENDER_PLACEHOLDER, escapedLabel);
   const images = options.resolveImageSrc
     ? resolveImages(html, options.resolveImageSrc)
@@ -409,12 +410,17 @@ export function extractHeadings(content: string): HeadingEntry[] {
     return [];
   }
   slugCounts.clear();
+  const frontMatter = parseFrontMatter(content);
+  // Les offsets restent relatifs au document complet (et non au corps) : la
+  // navigation dans le `textarea` doit continuer à viser le bon endroit.
+  const source = frontMatter.present ? frontMatter.body : content;
+  const offsetBase = frontMatter.present ? frontMatter.bodyStart : 0;
   const headings: HeadingEntry[] = [];
   let cursor = 0;
-  for (const token of parser.lexer(content)) {
+  for (const token of parser.lexer(source)) {
     if (token.type === 'heading') {
       const heading = token as Tokens.Heading;
-      const offset = content.indexOf(heading.raw, cursor);
+      const offset = source.indexOf(heading.raw, cursor);
       if (offset >= 0) {
         cursor = offset + heading.raw.length;
       }
@@ -422,7 +428,7 @@ export function extractHeadings(content: string): HeadingEntry[] {
         id: nextHeadingId(heading.raw),
         text: headingText(heading),
         level: heading.depth,
-        offset,
+        offset: offset >= 0 ? offsetBase + offset : offset,
       });
     }
   }
@@ -433,5 +439,7 @@ export function renderMarkdownPlain(content: string, options: RenderMarkdownOpti
   if (!content) {
     return '';
   }
-  return sanitizePdfHtml(createPdfParser(options.allowRawHtml === true).parse(content) as string);
+  return sanitizePdfHtml(
+    createPdfParser(options.allowRawHtml === true).parse(stripFrontMatter(content)) as string,
+  );
 }

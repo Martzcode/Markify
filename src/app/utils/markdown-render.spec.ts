@@ -378,4 +378,54 @@ describe('extractHeadings', () => {
   it('returns an empty array for empty content', () => {
     expect(extractHeadings('')).toEqual([]);
   });
+
+  it('ignores the front matter but keeps offsets relative to the whole document', () => {
+    const content = '---\ntitle: Hello\ntags:\n  - one\n---\n# Intro\n\n## Section\n';
+    const entries = extractHeadings(content);
+
+    expect(entries).toEqual([
+      { id: 'intro', text: 'Intro', level: 1, offset: content.indexOf('# Intro') },
+      { id: 'section', text: 'Section', level: 2, offset: content.indexOf('## Section') },
+    ]);
+  });
+
+  it('does not treat an invalid front matter as a header', () => {
+    const content = '---\n- one\n- two\n---\n# Intro\n';
+    const entries = extractHeadings(content);
+
+    expect(entries).toEqual([
+      { id: 'intro', text: 'Intro', level: 1, offset: content.indexOf('# Intro') },
+    ]);
+  });
+});
+
+describe('renderMarkdown front matter', () => {
+  it('removes a valid front matter from the preview', () => {
+    const html = renderMarkdown('---\ntitle: Hello\ntags: [one]\n---\n# Body', 'Copy');
+
+    expect(html).toContain('<h1 id="body">Body</h1>');
+    expect(html).not.toContain('title: Hello');
+    expect(html).not.toContain('tags:');
+  });
+
+  it('keeps an invalid front matter visible', () => {
+    const html = renderMarkdown('---\ntitle: [broken\n---\n# Body', 'Copy');
+
+    expect(html).toContain('title: [broken');
+    expect(html).toContain('<h1 id="body">Body</h1>');
+  });
+
+  it('removes the front matter from the PDF rendering too', () => {
+    const html = renderMarkdownPlain('---\ntitle: Hello\n---\n# Body');
+
+    expect(html).toContain('<h1>Body</h1>');
+    expect(html).not.toContain('title: Hello');
+  });
+
+  it('does not run KaTeX on the front matter in the PDF rendering', () => {
+    const html = renderMarkdownPlain('---\nformula: $x^2$\n---\n# Body');
+
+    expect(html).not.toContain('formula');
+    expect(html).toContain('<h1>Body</h1>');
+  });
 });

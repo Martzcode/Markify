@@ -13,8 +13,10 @@ import { LANG_NAMES, SUPPORTED_LANGS } from '../../i18n/translations';
 import { DocumentService, type EditorMode } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
 import { AboutDialogService } from '../../services/about-dialog.service';
+import { ClipboardService } from '../../services/clipboard.service';
 import { CodeBlockService } from '../../services/code-block.service';
 import { ExplorerService } from '../../services/explorer.service';
+import { FrontMatterService } from '../../services/front-matter.service';
 import { SearchService } from '../../services/search.service';
 import { SecurityService } from '../../services/security.service';
 import { SPELLCHECK_LANGUAGES, SpellcheckService } from '../../services/spellcheck.service';
@@ -48,8 +50,10 @@ export class TitleBar implements OnDestroy {
   private readonly tabs = inject(TabsService);
   private readonly editorRef = inject(EditorRefService);
   private readonly aboutDialog = inject(AboutDialogService);
+  private readonly clipboard = inject(ClipboardService);
   private readonly codeBlocks = inject(CodeBlockService);
   private readonly explorer = inject(ExplorerService);
+  private readonly frontMatter = inject(FrontMatterService);
   private readonly search = inject(SearchService);
   private readonly security = inject(SecurityService);
   private readonly spellcheck = inject(SpellcheckService);
@@ -153,6 +157,30 @@ export class TitleBar implements OnDestroy {
           action: () => this.document.pasteFromClipboard(),
         },
         {
+          label: this.i18n.t('menu.edit.copyAs'),
+          disabled: !this.document.isOpen(),
+          submenu: {
+            label: this.i18n.t('menu.edit.copyAs'),
+            items: [
+              {
+                label: this.i18n.t('menu.edit.copyAsHtml'),
+                disabled: !this.document.isOpen(),
+                action: () => void this.clipboard.copyAs('html'),
+              },
+              {
+                label: this.i18n.t('menu.edit.copyAsMarkdown'),
+                disabled: !this.document.isOpen(),
+                action: () => void this.clipboard.copyAs('markdown'),
+              },
+              {
+                label: this.i18n.t('menu.edit.copyAsText'),
+                disabled: !this.document.isOpen(),
+                action: () => void this.clipboard.copyAs('text'),
+              },
+            ],
+          },
+        },
+        {
           label: this.i18n.t('menu.edit.insertImage'),
           disabled: !this.document.isOpen(),
           action: () => this.document.insertImageFromDialog(),
@@ -183,6 +211,12 @@ export class TitleBar implements OnDestroy {
           label: this.i18n.t('menu.view.explorer'),
           shortcut: `${this.modKey}B`,
           action: () => this.explorer.toggle(),
+        },
+        {
+          label: this.i18n.t('menu.view.properties'),
+          checked: this.frontMatter.visible(),
+          disabled: !this.document.isOpen(),
+          action: () => this.frontMatter.toggle(),
         },
         {
           label: this.i18n.t('menu.view.mode'),

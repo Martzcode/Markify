@@ -18,6 +18,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { CodeBlockService } from '../../services/code-block.service';
 import { DocumentService } from '../../services/document.service';
 import { EditorRefService } from '../../services/editor-ref.service';
+import { FrontMatterService } from '../../services/front-matter.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { ImageService } from '../../services/image.service';
 import { KatexService } from '../../services/katex.service';
@@ -35,6 +36,7 @@ import { renderMarkdown } from '../../utils/markdown-render';
 import { renderMathElements } from '../../utils/math-blocks';
 import { renderMermaidBlocks } from '../../utils/mermaid-blocks';
 import { highlightRenderedHtml, renderSearchLayer } from '../../utils/search';
+import { PropertiesPanel } from '../properties-panel/properties-panel';
 import { SearchBar } from '../search-bar/search-bar';
 
 /** Position verticale relative d'une zone défilante, entre 0 et 1. */
@@ -55,12 +57,13 @@ const MATH_DEBOUNCE_MS = 60;
 
 @Component({
   selector: 'app-editor-view',
-  imports: [SearchBar],
+  imports: [PropertiesPanel, SearchBar],
   templateUrl: './editor-view.html',
   styleUrl: './editor-view.css',
 })
 export class EditorView implements OnDestroy {
   protected readonly document = inject(DocumentService);
+  protected readonly frontMatter = inject(FrontMatterService);
   protected readonly search = inject(SearchService);
   private readonly codeBlocks = inject(CodeBlockService);
   private readonly security = inject(SecurityService);

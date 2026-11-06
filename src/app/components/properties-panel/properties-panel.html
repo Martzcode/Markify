@@ -1,0 +1,123 @@
+<section class="properties" [attr.aria-label]="i18n.t('properties.heading')">
+  <header class="properties-header">
+    <span class="properties-title">{{ i18n.t('properties.heading') }}</span>
+    <button
+      type="button"
+      class="properties-close"
+      [title]="i18n.t('properties.close')"
+      [attr.aria-label]="i18n.t('properties.close')"
+      (click)="close()"
+    >
+      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+    </button>
+  </header>
+
+  @if (frontMatter.error(); as error) {
+    <div class="properties-error" role="alert">
+      <span class="properties-error-title">{{ i18n.t('properties.invalid') }}</span>
+      <span class="properties-error-detail">{{ error }}</span>
+    </div>
+  } @else if (!frontMatter.present()) {
+    <div class="properties-empty">
+      <span>{{ i18n.t('properties.empty') }}</span>
+      <button type="button" class="properties-add" (click)="create()">
+        {{ i18n.t('properties.add') }}
+      </button>
+    </div>
+  } @else {
+    <div class="properties-fields">
+      @for (field of knownFields; track field.key) {
+        <div class="property-row">
+          <label class="property-label" [attr.for]="'property-' + field.key">
+            {{ i18n.t(field.labelKey) }}
+          </label>
+          @if (field.key === 'tags') {
+            <input
+              class="property-input"
+              [id]="'property-' + field.key"
+              type="text"
+              [value]="tagsValue()"
+              [attr.placeholder]="i18n.t('properties.tagsHint')"
+              (input)="onTagsInput($event)"
+              (blur)="onTagsBlur()"
+            />
+          } @else if (field.key === 'date') {
+            <input
+              class="property-input"
+              [id]="'property-' + field.key"
+              [type]="dateInputType()"
+              [value]="knownValue(field.key)"
+              [attr.placeholder]="i18n.t('properties.dateHint')"
+              (input)="onFieldInput(field.key, $event)"
+            />
+          } @else {
+            <input
+              class="property-input"
+              [id]="'property-' + field.key"
+              type="text"
+              [value]="knownValue(field.key)"
+              (input)="onFieldInput(field.key, $event)"
+            />
+          }
+        </div>
+      }
+
+      @if (customFields().length > 0) {
+        <div class="properties-separator">{{ i18n.t('properties.other') }}</div>
+        @for (field of customFields(); track field.key) {
+          <div class="property-row property-row-custom">
+            <span class="property-label" [title]="field.key">{{ field.key }}</span>
+            <input
+              class="property-input"
+              type="text"
+              [value]="field.value"
+              [readOnly]="!field.editable"
+              [attr.title]="field.editable ? null : field.value"
+              (input)="onCustomInput(field.key, $event)"
+            />
+            <button
+              type="button"
+              class="property-remove"
+              [title]="i18n.t('properties.remove')"
+              [attr.aria-label]="i18n.t('properties.remove')"
+              (click)="remove(field.key)"
+            >
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+      }
+
+      <div class="properties-new">
+        <input
+          class="property-input property-new-key"
+          type="text"
+          [value]="newKey()"
+          [attr.placeholder]="i18n.t('properties.key')"
+          (input)="onNewKeyInput($event)"
+          (keydown.enter)="addProperty()"
+        />
+        <input
+          class="property-input property-new-value"
+          type="text"
+          [value]="newValue()"
+          [attr.placeholder]="i18n.t('properties.value')"
+          (input)="onNewValueInput($event)"
+          (keydown.enter)="addProperty()"
+        />
+        <button
+          type="button"
+          class="properties-add"
+          [disabled]="newKey().trim() === ''"
+          (click)="addProperty()"
+        >
+          {{ i18n.t('properties.addField') }}
+        </button>
+      </div>
+
+      @if (addError(); as error) {
+        <div class="properties-add-error" role="alert">{{ error }}</div>
+      }
+    </div>
+  }
+</section>

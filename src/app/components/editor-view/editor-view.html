@@ -1,43 +1,53 @@
-<div
-  class="editor"
-  [class.editor-split]="document.mode() === 'hybrid'"
-  (dragover)="onDragOver($event)"
-  (drop)="onDrop($event)"
->
-  @if (document.error(); as error) {
-    <div class="editor-error">{{ error }}</div>
+<div class="editor-shell">
+  @if (frontMatter.visible()) {
+    <app-properties-panel />
   }
-  @if (document.mode() === 'edit' || document.mode() === 'hybrid') {
-    <div class="editor-input-wrap">
-      <pre
-        #highlight
-        class="editor-highlight"
-        aria-hidden="true"
-        [innerHTML]="highlightedHtml()"
-      ></pre>
-      @if (search.isOpen() && searchHtml()) {
-        <pre #searchLayer class="editor-search" aria-hidden="true" [innerHTML]="searchHtml()"></pre>
-      }
-      <textarea
-        #input
-        class="editor-input"
-        [value]="document.content()"
-        (input)="onInput($event)"
-        (scroll)="onScroll($event)"
-        [attr.spellcheck]="spellcheck.enabled() ? 'true' : 'false'"
-        [attr.lang]="spellcheck.langAttribute()"
-      ></textarea>
-    </div>
-  }
-  @if (document.mode() === 'read' || document.mode() === 'hybrid') {
-    <div
-      #preview
-      class="editor-preview markdown-body"
-      (scroll)="onPreviewScroll($event)"
-      [innerHTML]="renderedHtml()"
-    ></div>
-  }
-  @if (search.isOpen()) {
-    <app-search-bar />
-  }
+  <div
+    class="editor"
+    [class.editor-split]="document.mode() === 'hybrid'"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+  >
+    @if (document.error(); as error) {
+      <div class="editor-error">{{ error }}</div>
+    }
+    @if (document.mode() === 'edit' || document.mode() === 'hybrid') {
+      <div class="editor-input-wrap">
+        <pre
+          #highlight
+          class="editor-highlight"
+          aria-hidden="true"
+          [innerHTML]="highlightedHtml()"
+        ></pre>
+        @if (search.isOpen() && searchHtml()) {
+          <pre
+            #searchLayer
+            class="editor-search"
+            aria-hidden="true"
+            [innerHTML]="searchHtml()"
+          ></pre>
+        }
+        <textarea
+          #input
+          class="editor-input"
+          [value]="document.content()"
+          (input)="onInput($event)"
+          (scroll)="onScroll($event)"
+          [attr.spellcheck]="spellcheck.enabled() ? 'true' : 'false'"
+          [attr.lang]="spellcheck.langAttribute()"
+        ></textarea>
+      </div>
+    }
+    @if (document.mode() === 'read' || document.mode() === 'hybrid') {
+      <div
+        #preview
+        class="editor-preview markdown-body"
+        (scroll)="onPreviewScroll($event)"
+        [innerHTML]="renderedHtml()"
+      ></div>
+    }
+    @if (search.isOpen()) {
+      <app-search-bar />
+    }
+  </div>
 </div>

@@ -3,7 +3,9 @@ import { vi } from 'vitest';
 import { TitleBar } from './title-bar';
 import { ThemeService } from '../../services/theme.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { ClipboardService } from '../../services/clipboard.service';
 import { DocumentService } from '../../services/document.service';
+import { FrontMatterService } from '../../services/front-matter.service';
 import { TabsService } from '../../services/tabs.service';
 
 describe('TitleBar', () => {
@@ -310,5 +312,58 @@ describe('TitleBar', () => {
     fixture.detectChanges();
     expect(theme.preference()).toBe('auto');
     expect(button.querySelector('.fa-circle-half-stroke')).not.toBeNull();
+  });
+
+  it('offers a copy-as submenu with the three formats', () => {
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const copyAs = menus[1].items.find(
+      (item) => item.submenu && item.label.includes('Copy as'),
+    );
+
+    expect(copyAs).toBeDefined();
+    expect(copyAs!.disabled).toBe(true);
+    expect(copyAs!.submenu!.items).toHaveLength(3);
+    expect(copyAs!.submenu!.items.map((item) => item.label)).toEqual([
+      'Rich HTML',
+      'Markdown',
+      'Plain text',
+    ]);
+  });
+
+  it('copies the document in the chosen format', () => {
+    const clipboard = TestBed.inject(ClipboardService);
+    const spy = vi.spyOn(clipboard, 'copyAs').mockResolvedValue(true);
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const copyAs = menus[1].items.find(
+      (item) => item.submenu && item.label.includes('Copy as'),
+    )!;
+
+    copyAs.submenu!.items[1].action!();
+
+    expect(spy).toHaveBeenCalledWith('markdown');
+  });
+
+  it('toggles the document properties panel from the view menu', () => {
+    const frontMatter = TestBed.inject(FrontMatterService);
+    const menus = (component as unknown as { menus: () => ReturnType<TitleBar['menus']> }).menus();
+    const item = menus[2].items.find((entry) =>
+      entry.label.includes('Document properties'),
+    );
+
+    expect(item).toBeDefined();
+    expect(item!.checked).toBe(false);
+    expect(item!.disabled).toBe(true);
+
+    TestBed.inject(DocumentService).isOpen.set(true);
+    const enabled = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2].items.find((entry) => entry.label.includes('Document properties'))!;
+    enabled.action!();
+
+    expect(frontMatter.visible()).toBe(true);
+    const updated = (
+      component as unknown as { menus: () => ReturnType<TitleBar['menus']> }
+    ).menus()[2].items.find((entry) => entry.label.includes('Document properties'))!;
+    expect(updated.checked).toBe(true);
   });
 });
